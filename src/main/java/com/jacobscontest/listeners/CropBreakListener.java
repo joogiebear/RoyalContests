@@ -1,33 +1,48 @@
 package com.jacobscontest.listeners;
 
 import com.jacobscontest.JacobsContest;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.Collection;
+import java.util.*;
 
 /**
  * Listens for crop breaks during an active contest.
  *
- * Scores based on the actual item drops from the block (respects Fortune, Eco enchants, etc.)
- * Uses BlockBreakEvent with getDrops() to calculate points in a single event.
+ * Two-phase scoring:
+ * Phase 1 (BlockBreakEvent): Validate the crop break, lock player in, flag as pending.
+ * Phase 2 (BlockDropItemEvent): Count the ACTUAL drops (after all plugins modify them)
+ *         and award points. This captures Fortune, EcoEnchants, EcoSkills, pets, etc.
+ *
+ * If BlockDropItemEvent never fires (e.g., silk touch, or drops suppressed),
+ * a fallback gives 1 point after the tick ends.
  */
 public class CropBreakListener implements Listener {
 
     private final JacobsContest plugin;
 
+    // Players who broke a valid crop this tick, waiting for drop event
+    // Maps player UUID -> true (just a flag)
+    private final Set<UUID> pendingPlayers = Collections.synchronizedSet(new HashSet<>());
+
     public CropBreakListener(JacobsContest plugin) {
         this.plugin = plugin;
     }
 
+    /**
+     * Phase 1: Validate crop break, lock player in, flag for drop counting.
+     */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         if (!plugin.getContestManager().isContestActive()) return;
@@ -49,22 +64,45 @@ public class CropBreakListener implements Listener {
             return;
         }
 
-        // Calculate points from the drops this block will produce
-        // getDrops() respects Fortune and other vanilla enchantments
-        Collection<ItemStack> drops = block.getDrops(player.getInventory().getItemInMainHand(), player);
+        // Flag this player as having a pending drop to score
+        pendingPlayers.add(player.getUniqueId());
 
+        // Schedule fallback: if BlockDropItemEvent doesn't fire by next tick, award 1 point
+        UUID uuid = player.getUniqueId();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (pendingPlayers.remove(uuid)) {
+                // BlockDropItemEvent never fired — give 1 point as fallback
+                plugin.getContestManager().addPlayerScore(uuid, 1);
+            }
+        }, 1L);
+    }
+
+    /**
+     * Phase 2: Count actual item drops. This fires AFTER all plugins have modified drops
+     * (EcoEnchants, EcoSkills, Fortune, pets, talismans, etc.)
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockDropItem(BlockDropItemEvent event) {
+        if (!plugin.getContestManager().isContestActive()) return;
+
+        Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
+
+        // Only score if this player has a pending break
+        if (!pendingPlayers.remove(uuid)) return;
+
+        // Count points from all dropped items
         int totalPoints = 0;
-        for (ItemStack stack : drops) {
+        for (Item item : event.getItems()) {
+            ItemStack stack = item.getItemStack();
             int points = getPointValue(stack);
             totalPoints += points * stack.getAmount();
         }
 
-        // If no configured drops matched, give 1 point as baseline
-        if (totalPoints <= 0) {
-            totalPoints = 1;
-        }
+        // Award points (minimum 1 if they broke a valid crop)
+        if (totalPoints <= 0) totalPoints = 1;
 
-        plugin.getContestManager().addPlayerScore(player.getUniqueId(), totalPoints);
+        plugin.getContestManager().addPlayerScore(uuid, totalPoints);
     }
 
     /**
