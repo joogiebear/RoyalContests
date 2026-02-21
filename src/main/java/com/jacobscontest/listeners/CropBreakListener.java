@@ -20,28 +20,34 @@ import java.util.*;
 /**
  * Listens for crop breaks during an active contest.
  *
- * Two-phase scoring:
- * Phase 1 (BlockBreakEvent): Validate the crop break, lock player in, flag as pending.
- * Phase 2 (BlockDropItemEvent): Count the ACTUAL drops (after all plugins modify them)
- *         and award points. This captures Fortune, EcoEnchants, EcoSkills, pets, etc.
+ * Hybrid scoring approach to handle all scenarios:
  *
- * If BlockDropItemEvent never fires (e.g., silk touch, or drops suppressed),
- * a fallback gives 1 point after the tick ends.
+ * 1. BlockBreakEvent (MONITOR): Validate crop, lock player, calculate BASELINE score
+ *    using block.getDrops() — captures vanilla + Fortune drops.
+ *
+ * 2. BlockDropItemEvent (HIGHEST): Count ACTUAL drops BEFORE virtual bag plugins
+ *    might intercept them. If actual drops give MORE points than baseline, use those.
+ *    This captures Eco enchants, skills, pets, talismans, etc.
+ *
+ * This means:
+ * - Fortune: ✅ captured by block.getDrops()
+ * - Eco buffs: ✅ captured by BlockDropItemEvent (if it fires)
+ * - Virtual bag steals drops: ✅ still have baseline from getDrops()
+ * - Both: ✅ we take the higher of the two scores
  */
 public class CropBreakListener implements Listener {
 
     private final JacobsContest plugin;
 
-    // Players who broke a valid crop this tick, waiting for drop event
-    // Maps player UUID -> true (just a flag)
-    private final Set<UUID> pendingPlayers = Collections.synchronizedSet(new HashSet<>());
+    // Tracks pending break data per player: UUID -> baseline points
+    private final Map<UUID, Integer> pendingBaseline = Collections.synchronizedMap(new HashMap<>());
 
     public CropBreakListener(JacobsContest plugin) {
         this.plugin = plugin;
     }
 
     /**
-     * Phase 1: Validate crop break, lock player in, flag for drop counting.
+     * Phase 1: Validate crop, lock player, calculate baseline score.
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
@@ -64,45 +70,59 @@ public class CropBreakListener implements Listener {
             return;
         }
 
-        // Flag this player as having a pending drop to score
-        pendingPlayers.add(player.getUniqueId());
+        // Calculate baseline score from block.getDrops() (vanilla + Fortune)
+        Collection<ItemStack> drops = block.getDrops(player.getInventory().getItemInMainHand(), player);
+        int baselinePoints = 0;
+        for (ItemStack stack : drops) {
+            int points = getPointValue(stack);
+            baselinePoints += points * stack.getAmount();
+        }
+        if (baselinePoints <= 0) baselinePoints = 1;
 
-        // Schedule fallback: if BlockDropItemEvent doesn't fire by next tick, award 1 point
+        // Store baseline and wait for BlockDropItemEvent
         UUID uuid = player.getUniqueId();
+        pendingBaseline.put(uuid, baselinePoints);
+
+        // Fallback: if BlockDropItemEvent doesn't fire, award baseline after this tick
+        final int fallbackPoints = baselinePoints;
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (pendingPlayers.remove(uuid)) {
-                // BlockDropItemEvent never fired — give 1 point as fallback
-                plugin.getContestManager().addPlayerScore(uuid, 1);
+            Integer pending = pendingBaseline.remove(uuid);
+            if (pending != null) {
+                // BlockDropItemEvent never fired — use baseline
+                plugin.getContestManager().addPlayerScore(uuid, fallbackPoints);
             }
         }, 1L);
     }
 
     /**
-     * Phase 2: Count actual item drops. This fires AFTER all plugins have modified drops
-     * (EcoEnchants, EcoSkills, Fortune, pets, talismans, etc.)
+     * Phase 2: Count actual drops BEFORE virtual bags intercept them.
+     * Uses HIGHEST priority to see drops before bag plugins (which typically use MONITOR).
+     * If actual drops > baseline, use actual. Otherwise keep baseline.
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockDropItem(BlockDropItemEvent event) {
         if (!plugin.getContestManager().isContestActive()) return;
 
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
 
-        // Only score if this player has a pending break
-        if (!pendingPlayers.remove(uuid)) return;
+        // Only process if this player has a pending break
+        Integer baseline = pendingBaseline.remove(uuid);
+        if (baseline == null) return;
 
-        // Count points from all dropped items
-        int totalPoints = 0;
+        // Count points from actual dropped items
+        int actualPoints = 0;
         for (Item item : event.getItems()) {
             ItemStack stack = item.getItemStack();
             int points = getPointValue(stack);
-            totalPoints += points * stack.getAmount();
+            actualPoints += points * stack.getAmount();
         }
 
-        // Award points (minimum 1 if they broke a valid crop)
-        if (totalPoints <= 0) totalPoints = 1;
+        // Use whichever is higher: actual drops (includes Eco buffs) or baseline (includes Fortune)
+        int finalPoints = Math.max(actualPoints, baseline);
+        if (finalPoints <= 0) finalPoints = 1;
 
-        plugin.getContestManager().addPlayerScore(uuid, totalPoints);
+        plugin.getContestManager().addPlayerScore(uuid, finalPoints);
     }
 
     /**
