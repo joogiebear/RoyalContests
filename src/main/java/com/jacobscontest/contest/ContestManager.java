@@ -1,6 +1,7 @@
 package com.jacobscontest.contest;
 
 import com.jacobscontest.JacobsContest;
+import com.jacobscontest.util.ConfigManager;
 import com.jacobscontest.util.MessageUtil;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
@@ -65,33 +66,33 @@ public class ContestManager {
     // ========================================
 
     public void loadConfig() {
-        plugin.reloadConfig();
-        FileConfiguration config = plugin.getConfig();
+        ConfigManager cm = plugin.getConfigManager();
+        cm.reloadAll();
+        FileConfiguration config = cm.getConfig();
+        FileConfiguration bracketsYml = cm.getBrackets();
+        FileConfiguration eventsYml = cm.getEvents();
 
         events.clear();
         brackets.clear();
         rotation.clear();
 
-        // Load brackets
-        ConfigurationSection bracketSection = config.getConfigurationSection("brackets");
-        if (bracketSection != null) {
-            for (String key : bracketSection.getKeys(false)) {
-                ConfigurationSection b = bracketSection.getConfigurationSection(key);
-                if (b == null) continue;
-                brackets.add(new Bracket(
-                        key,
-                        b.getInt("threshold", 100),
-                        b.getString("color", "&7"),
-                        b.getString("display-name", key),
-                        b.getStringList("commands")
-                ));
-            }
+        // Load brackets from brackets.yml
+        for (String key : bracketsYml.getKeys(false)) {
+            ConfigurationSection b = bracketsYml.getConfigurationSection(key);
+            if (b == null) continue;
+            brackets.add(new Bracket(
+                    key,
+                    b.getInt("threshold", 100),
+                    b.getString("color", "&7"),
+                    b.getString("display-name", key),
+                    b.getStringList("commands")
+            ));
         }
         // Sort brackets by threshold ascending (strictest first)
         brackets.sort(Comparator.comparingInt(Bracket::threshold));
 
-        // Load events
-        ConfigurationSection eventSection = config.getConfigurationSection("events");
+        // Load events from events.yml
+        ConfigurationSection eventSection = eventsYml.getConfigurationSection("events");
         if (eventSection != null) {
             for (String key : eventSection.getKeys(false)) {
                 ConfigurationSection e = eventSection.getConfigurationSection(key);
@@ -101,7 +102,6 @@ public class ContestManager {
                 for (String cropName : e.getStringList("crops")) {
                     Material mat = Material.matchMaterial(cropName);
                     if (mat != null) {
-                        // Map crop names to their block equivalents
                         crops.add(mapCropMaterial(mat));
                     }
                 }
@@ -109,16 +109,16 @@ public class ContestManager {
                 events.put(key, new ContestEvent(
                         key,
                         e.getString("display-name", key),
-                        parseDuration(e.getString("duration", config.getString("settings.default-duration", "10m"))),
-                        parseDuration(e.getString("countdown", config.getString("settings.countdown", "5m"))),
+                        parseDuration(e.getString("duration", config.getString("settings.default-duration", "20m"))),
+                        parseDuration(e.getString("countdown", config.getString("settings.countdown", "2m"))),
                         crops,
                         e.getStringList("worlds")
                 ));
             }
         }
 
-        // Load rotation
-        rotation.addAll(config.getStringList("rotation"));
+        // Load rotation from events.yml
+        rotation.addAll(eventsYml.getStringList("rotation"));
 
         // Load skill requirement
         ConfigurationSection skillSection = config.getConfigurationSection("settings.skill-requirement");
@@ -172,8 +172,7 @@ public class ContestManager {
             String nextEventId = rotation.get(rotationIndex % rotation.size());
             ContestEvent nextEvent = events.get(nextEventId);
             if (nextEvent != null) {
-                String announceMsg = plugin.getConfig().getString("settings.auto-rotation.next-contest-message",
-                                "&eNext contest: %event% in %time%")
+                String announceMsg = getMessage("next-contest")
                         .replace("%event%", nextEvent.displayName())
                         .replace("%time%", formatTime(delayTicks / 20));
                 broadcastMessage(announceMsg);
@@ -465,7 +464,7 @@ public class ContestManager {
         broadcastMessage(getMessage("results-header"));
 
         if (totalQualified == 0) {
-            broadcastMessage("  &7No players reached the minimum score of " + minimumScore + "!");
+            broadcastMessage(getMessage("no-qualified"));
         }
 
         // Award qualified players
@@ -667,7 +666,7 @@ public class ContestManager {
     }
 
     private String getMessage(String key) {
-        return plugin.getConfig().getString("messages." + key, "&cMissing message: " + key);
+        return plugin.getConfigManager().getMessage(key);
     }
 
     private void broadcastMessage(String message) {

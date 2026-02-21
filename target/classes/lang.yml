@@ -1,0 +1,41 @@
+# ============================================
+#     Jacob's Contest - Language / Messages
+# ============================================
+# Supports & color codes and placeholders.
+# Available placeholders vary per message — see comments.
+
+# ---- Contest Lifecycle ----
+# %event% = event display name, %time% = formatted time, %crops% = crop list
+contest-countdown: "&e&lJacob's Contest &8» &f%event% &fstarts in &6%time%&f! Crops: &6%crops%"
+contest-started: "&e&lJacob's Contest &8» &f%event% &fhas begun! Break &6%crops% &fto compete!"
+contest-ended: "&e&lJacob's Contest &8» &f%event% &fhas ended!"
+
+# ---- Results ----
+results-header: "&e&l  ═══ Contest Results ═══"
+# %bracket_display% = colored bracket name, %player%, %position%, %score%, %crop%
+bracket-result: "  %bracket_display% &8» &f%player% &7(#%position% — %score% crops)"
+
+# ---- Player Messages ----
+# %crop% = crop name the player is locked to
+player-locked: "&e&lJacob's Contest &8» &fYou are now competing with &6%crop%&f!"
+player-wrong-crop: "&e&lJacob's Contest &8» &cYou are locked to &6%crop%&c!"
+
+# ---- Requirements ----
+# %score% = player's score, %minimum% = minimum required
+below-minimum: "&cYou need at least &6%minimum% crops &cto earn rewards! You collected &6%score%&c."
+
+# ---- Errors ----
+not-in-event-world: "&e&lJacob's Contest &8» &cThis contest is not active in this world!"
+no-active-contest: "&e&lJacob's Contest &8» &cNo contest is currently active."
+contest-already-active: "&e&lJacob's Contest &8» &cA contest is already running!"
+# %event% = event id that wasn't found
+event-not-found: "&e&lJacob's Contest &8» &cEvent '%event%' not found!"
+
+# ---- Display ----
+# %crop% = player's crop, %score% = player's score, %time% = time remaining
+bossbar-text: "&e&lJacob's Contest &8| &f%crop%: &6%score% &8| &f⏱ &6%time%"
+
+# ---- Auto-Rotation ----
+# %event% = next event display name, %time% = time until start
+next-contest: "&e&lJacob's Contest &8» &fNext contest: %event% &fin &6%time%"
+no-qualified: "  &7No players reached the minimum score!"

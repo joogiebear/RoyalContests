@@ -169,6 +169,6 @@ public class ContestCommand implements CommandExecutor, TabCompleter {
     }
 
     private String getMsg(String key) {
-        return plugin.getConfig().getString("messages." + key, "&cMissing: " + key);
+        return plugin.getConfigManager().getMessage(key);
     }
 }

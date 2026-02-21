@@ -4,6 +4,7 @@ import com.jacobscontest.commands.ContestCommand;
 import com.jacobscontest.contest.ContestManager;
 import com.jacobscontest.listeners.CropBreakListener;
 import com.jacobscontest.placeholders.ContestPlaceholders;
+import com.jacobscontest.util.ConfigManager;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -11,11 +12,15 @@ public final class JacobsContest extends JavaPlugin {
 
     private static JacobsContest instance;
     private ContestManager contestManager;
+    private ConfigManager configManager;
 
     @Override
     public void onEnable() {
         instance = this;
-        saveDefaultConfig();
+
+        // Load all config files
+        configManager = new ConfigManager(this);
+        configManager.loadAll();
 
         contestManager = new ContestManager(this);
 
@@ -49,5 +54,9 @@ public final class JacobsContest extends JavaPlugin {
 
     public ContestManager getContestManager() {
         return contestManager;
+    }
+
+    public ConfigManager getConfigManager() {
+        return configManager;
     }
 }

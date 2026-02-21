@@ -10,5 +10,6 @@ com/jacobscontest/contest/ContestManager$3.class
 com/jacobscontest/placeholders/ContestPlaceholders.class
 com/jacobscontest/contest/ContestManager.class
 com/jacobscontest/JacobsContest.class
+com/jacobscontest/util/ConfigManager.class
 com/jacobscontest/contest/PlayerContestData.class
 com/jacobscontest/contest/ContestEvent.class
