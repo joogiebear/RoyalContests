@@ -58,10 +58,17 @@ public class ClaimMenu {
             }
         }
 
-        // Bottom row: Back button in middle
+        // Bottom row
         int backSlot = size - 5; // Center of last row
         inv.setItem(backSlot, createItem(Material.ARROW, "&e← Back",
                 List.of("&7Return to the main menu")));
+
+        // Claim All button (right side of last row) — only show if there are rewards
+        if (!rewards.isEmpty()) {
+            int claimAllSlot = size - 2; // Right side of last row
+            inv.setItem(claimAllSlot, createItem(Material.EMERALD_BLOCK, "&a&lClaim All",
+                    List.of("&7Claim all &e" + rewards.size() + " &7rewards at once!", "", "&eClick to claim all!")));
+        }
 
         player.openInventory(inv);
     }

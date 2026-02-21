@@ -74,10 +74,19 @@ public class MenuListener implements Listener {
             return;
         }
 
+        // Claim All button (right side of last row)
+        if (slot == size - 2) {
+            if (event.getCurrentItem() != null && event.getCurrentItem().getType() == Material.EMERALD_BLOCK) {
+                claimAll(player);
+                return;
+            }
+        }
+
         // Check if clicking a reward item (not filler)
         if (event.getCurrentItem() == null) return;
         Material type = event.getCurrentItem().getType();
-        if (type == Material.BLACK_STAINED_GLASS_PANE || type == Material.GRAY_DYE || type == Material.ARROW) return;
+        if (type == Material.BLACK_STAINED_GLASS_PANE || type == Material.GRAY_DYE
+                || type == Material.ARROW || type == Material.EMERALD_BLOCK) return;
 
         // Find the reward at this slot
         List<PendingReward> rewards = plugin.getStorage().getPendingRewards(player.getUniqueId());
@@ -85,6 +94,34 @@ public class MenuListener implements Listener {
 
         PendingReward reward = rewards.get(slot);
         claimReward(player, reward);
+    }
+
+    private void claimAll(Player player) {
+        List<PendingReward> rewards = plugin.getStorage().getPendingRewards(player.getUniqueId());
+        if (rewards.isEmpty()) return;
+
+        int count = 0;
+        for (PendingReward reward : rewards) {
+            // Execute all reward commands
+            for (String cmd : reward.getCommands()) {
+                String finalCmd = cmd
+                        .replace("%player%", player.getName())
+                        .replace("%crop%", reward.getCrop())
+                        .replace("%score%", String.valueOf(reward.getScore()))
+                        .replace("%bracket%", reward.getBracket())
+                        .replace("%position%", String.valueOf(reward.getPosition()));
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), finalCmd);
+            }
+            plugin.getStorage().markRewardClaimed(reward.getId());
+            count++;
+        }
+
+        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
+        player.sendMessage(MessageUtil.toComponent(
+                "&e&lJacob's Contest &8» &aClaimed &6" + count + " &areward(s)!"));
+
+        // Refresh the menu
+        new ClaimMenu(plugin).open(player);
     }
 
     private void claimReward(Player player, PendingReward reward) {
