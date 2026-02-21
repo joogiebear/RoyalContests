@@ -4,6 +4,7 @@ com/jacobscontest/commands/ContestCommand.class
 com/jacobscontest/listeners/CropBreakListener.class
 com/jacobscontest/contest/ContestManager$1.class
 com/jacobscontest/util/MessageUtil.class
+com/jacobscontest/contest/ContestManager$5.class
 com/jacobscontest/contest/ContestManager$4.class
 com/jacobscontest/contest/ContestManager$3.class
 com/jacobscontest/placeholders/ContestPlaceholders.class

@@ -5,10 +5,10 @@
 settings:
   # Prefix for all chat messages
   prefix: "&e&lJacob's Contest &8» &r"
-  # Default contest duration (e.g., 10m, 5m, 30s)
-  default-duration: 10m
+  # Default contest duration (e.g., 20m, 10m, 5m, 30s)
+  default-duration: 20m
   # Countdown before contest starts
-  countdown: 5m
+  countdown: 2m
   # Display method: ACTION_BAR or BOSS_BAR
   display: BOSS_BAR
   # BossBar color: BLUE, GREEN, RED, YELLOW, PURPLE, PINK, WHITE
@@ -17,6 +17,38 @@ settings:
   start-sound: "entity.player.levelup"
   # Sound played when contest ends
   end-sound: "entity.firework_rocket.blast"
+
+  # ---- Skill Requirement ----
+  # Players must meet this requirement to participate.
+  # Uses PlaceholderAPI — works with EcoSkills, AuraSkills, mcMMO, etc.
+  # Set enabled: false to let anyone participate.
+  skill-requirement:
+    enabled: true
+    # The PAPI placeholder to check (without % signs)
+    placeholder: "ecoskills_farming_level"
+    # Minimum value required
+    minimum: 10
+    # Message shown when player doesn't meet requirement
+    deny-message: "&cYou need &6Farming Level 10 &cto participate in Jacob's Contest!"
+
+  # ---- Minimum Score ----
+  # Players must reach this score to earn ANY rewards.
+  # Below this threshold, they get nothing (not even participation).
+  minimum-score: 100
+  minimum-score-message: "&cYou need at least &6100 crops &cto earn rewards! You collected &6%score%&c."
+
+  # ---- Auto Rotation ----
+  # Automatically cycles through events in the rotation list.
+  auto-rotation:
+    enabled: true
+    # Time between contests (break/downtime after one ends before next countdown starts)
+    # 1 hour = 1 in-game day (roughly 3 in-game days break)
+    break-between: 1h
+    # Set to false to stop rotation after current contest
+    # (useful for manual override without disabling config)
+    announce-next: true
+    # Message broadcast when next contest is announced
+    next-contest-message: "&e&lJacob's Contest &8» &fNext contest: %event% &fin &6%time%"
 
 # ============================================
 #     Bracket Definitions (by percentile)
@@ -181,3 +213,5 @@ messages:
   contest-already-active: "&e&lJacob's Contest &8» &cA contest is already running!"
   event-not-found: "&e&lJacob's Contest &8» &cEvent '%event%' not found!"
   bossbar-text: "&e&lJacob's Contest &8| &f%crop%: &6%score% &8| &f⏱ &6%time%"
+  below-minimum: "&7%player% did not reach the minimum score (%score%/%minimum%)"
+  next-contest: "&e&lJacob's Contest &8» &fNext contest in &6%time%&f!"

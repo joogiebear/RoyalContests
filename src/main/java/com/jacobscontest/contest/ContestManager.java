@@ -34,11 +34,26 @@ public class ContestManager {
     private BukkitTask countdownTask;
     private BukkitTask contestTask;
     private BukkitTask displayTask;
+    private BukkitTask autoRotationTask;
     private BossBar bossBar;
     private long contestEndTime;
     private boolean contestActive = false;
     private boolean countdownActive = false;
     private int rotationIndex = 0;
+
+    // Skill requirement cache
+    private boolean skillRequirementEnabled = false;
+    private String skillPlaceholder = "";
+    private int skillMinimum = 0;
+    private String skillDenyMessage = "";
+
+    // Minimum score
+    private int minimumScore = 0;
+    private String minimumScoreMessage = "";
+
+    // Cooldown for deny messages (prevent spam)
+    private final Map<UUID, Long> denyMessageCooldown = new HashMap<>();
+    private static final long DENY_COOLDOWN_MS = 5000; // 5 seconds
 
     public ContestManager(JacobsContest plugin) {
         this.plugin = plugin;
@@ -104,6 +119,75 @@ public class ContestManager {
 
         // Load rotation
         rotation.addAll(config.getStringList("rotation"));
+
+        // Load skill requirement
+        ConfigurationSection skillSection = config.getConfigurationSection("settings.skill-requirement");
+        if (skillSection != null) {
+            skillRequirementEnabled = skillSection.getBoolean("enabled", false);
+            skillPlaceholder = skillSection.getString("placeholder", "");
+            skillMinimum = skillSection.getInt("minimum", 0);
+            skillDenyMessage = skillSection.getString("deny-message", "&cYou don't meet the skill requirement!");
+        }
+
+        // Load minimum score
+        minimumScore = config.getInt("settings.minimum-score", 0);
+        minimumScoreMessage = config.getString("settings.minimum-score-message",
+                "&cYou need at least &6%minimum% crops &cto earn rewards!");
+
+        // Start auto-rotation if enabled
+        startAutoRotation();
+    }
+
+    // ========================================
+    //           Auto Rotation
+    // ========================================
+
+    public void startAutoRotation() {
+        stopAutoRotation();
+
+        if (!plugin.getConfig().getBoolean("settings.auto-rotation.enabled", false)) return;
+        if (rotation.isEmpty()) return;
+
+        // Schedule the first contest after the break period
+        long breakTicks = parseDuration(plugin.getConfig().getString("settings.auto-rotation.break-between", "1h"));
+
+        // If no contest is active, start the first one after a short delay
+        if (!contestActive && !countdownActive) {
+            scheduleNextContest(200L); // 10 second initial delay
+        }
+    }
+
+    public void stopAutoRotation() {
+        if (autoRotationTask != null) {
+            autoRotationTask.cancel();
+            autoRotationTask = null;
+        }
+    }
+
+    private void scheduleNextContest(long delayTicks) {
+        if (!plugin.getConfig().getBoolean("settings.auto-rotation.enabled", false)) return;
+
+        // Announce next contest
+        if (plugin.getConfig().getBoolean("settings.auto-rotation.announce-next", true) && delayTicks > 200L) {
+            String nextEventId = rotation.get(rotationIndex % rotation.size());
+            ContestEvent nextEvent = events.get(nextEventId);
+            if (nextEvent != null) {
+                String announceMsg = plugin.getConfig().getString("settings.auto-rotation.next-contest-message",
+                                "&eNext contest: %event% in %time%")
+                        .replace("%event%", nextEvent.displayName())
+                        .replace("%time%", formatTime(delayTicks / 20));
+                broadcastMessage(announceMsg);
+            }
+        }
+
+        autoRotationTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!contestActive && !countdownActive) {
+                    startNextRotation();
+                }
+            }
+        }.runTaskLater(plugin, delayTicks);
     }
 
     /**
@@ -257,16 +341,29 @@ public class ContestManager {
         // Clean up
         participants.clear();
         activeEvent = null;
+
+        // Schedule next auto-rotation contest
+        if (plugin.getConfig().getBoolean("settings.auto-rotation.enabled", false)) {
+            long breakTicks = parseDuration(plugin.getConfig().getString("settings.auto-rotation.break-between", "1h"));
+            scheduleNextContest(breakTicks);
+        }
     }
 
     public void forceStop() {
+        stopAutoRotation();
         if (countdownActive) {
             countdownActive = false;
             if (countdownTask != null) { countdownTask.cancel(); countdownTask = null; }
         }
         if (contestActive) {
+            // Temporarily disable auto-rotation so endContest doesn't schedule the next one
+            boolean wasAutoRotation = plugin.getConfig().getBoolean("settings.auto-rotation.enabled", false);
+            plugin.getConfig().set("settings.auto-rotation.enabled", false);
             endContest();
+            plugin.getConfig().set("settings.auto-rotation.enabled", wasAutoRotation);
         }
+        participants.clear();
+        activeEvent = null;
     }
 
     // ========================================
@@ -288,6 +385,21 @@ public class ContestManager {
         if (!activeEvent.isCropValid(blockType)) return false;
 
         UUID uuid = player.getUniqueId();
+
+        // Check skill requirement (only on first participation, not every break)
+        if (!participants.containsKey(uuid) && skillRequirementEnabled) {
+            if (!meetsSkillRequirement(player)) {
+                // Rate-limit deny messages so we don't spam the player
+                long now = System.currentTimeMillis();
+                Long lastDeny = denyMessageCooldown.get(uuid);
+                if (lastDeny == null || now - lastDeny > DENY_COOLDOWN_MS) {
+                    player.sendMessage(MessageUtil.toComponent(skillDenyMessage));
+                    denyMessageCooldown.put(uuid, now);
+                }
+                return false;
+            }
+        }
+
         PlayerContestData data = participants.computeIfAbsent(uuid,
                 k -> new PlayerContestData(uuid, player.getName()));
 
@@ -342,19 +454,29 @@ public class ContestManager {
                 .sorted(Comparator.comparingInt(PlayerContestData::getScore).reversed())
                 .collect(Collectors.toList());
 
-        int totalParticipants = sorted.size();
+        // Filter out players who didn't meet minimum score for ranking purposes
+        List<PlayerContestData> qualified = sorted.stream()
+                .filter(d -> d.getScore() >= minimumScore)
+                .collect(Collectors.toList());
+
+        int totalQualified = qualified.size();
 
         // Broadcast results header
         broadcastMessage(getMessage("results-header"));
 
-        for (int i = 0; i < sorted.size(); i++) {
-            PlayerContestData data = sorted.get(i);
+        if (totalQualified == 0) {
+            broadcastMessage("  &7No players reached the minimum score of " + minimumScore + "!");
+        }
+
+        // Award qualified players
+        for (int i = 0; i < qualified.size(); i++) {
+            PlayerContestData data = qualified.get(i);
             int position = i + 1;
 
-            // Calculate percentile: position 1 out of 100 = top 1%
-            double percentile = ((double) position / totalParticipants) * 100.0;
+            // Calculate percentile based on qualified players only
+            double percentile = ((double) position / totalQualified) * 100.0;
 
-            // Find matching bracket (first one that qualifies, since sorted by threshold)
+            // Find matching bracket
             Bracket bracket = findBracket(percentile);
             if (bracket == null) continue;
 
@@ -379,6 +501,43 @@ public class ContestManager {
                         .replace("%position%", String.valueOf(position));
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), finalCmd);
             }
+        }
+
+        // Notify players who didn't meet minimum score
+        for (PlayerContestData data : sorted) {
+            if (data.getScore() < minimumScore) {
+                Player player = Bukkit.getPlayer(data.getPlayerId());
+                if (player != null && player.isOnline()) {
+                    String msg = minimumScoreMessage
+                            .replace("%score%", String.valueOf(data.getScore()))
+                            .replace("%minimum%", String.valueOf(minimumScore));
+                    player.sendMessage(MessageUtil.toComponent(msg));
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if a player meets the skill requirement via PlaceholderAPI.
+     */
+    private boolean meetsSkillRequirement(Player player) {
+        if (!skillRequirementEnabled || skillPlaceholder.isEmpty()) return true;
+
+        try {
+            // Use PlaceholderAPI to resolve the placeholder
+            String resolved = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(
+                    player, "%" + skillPlaceholder + "%");
+
+            // Try to parse as number
+            double value = Double.parseDouble(resolved);
+            return value >= skillMinimum;
+        } catch (NumberFormatException e) {
+            plugin.getLogger().warning("Could not parse skill placeholder '" + skillPlaceholder
+                    + "' for player " + player.getName() + ": " + e.getMessage());
+            return false;
+        } catch (Exception e) {
+            // PlaceholderAPI not available or other error — allow participation
+            return true;
         }
     }
 
