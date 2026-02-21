@@ -1,0 +1,151 @@
+# ============================================
+#          Jacob's Contest Configuration
+# ============================================
+
+settings:
+  # Prefix for all chat messages
+  prefix: "&e&lJacob's Contest &8» &r"
+  # Default contest duration (e.g., 10m, 5m, 30s)
+  default-duration: 10m
+  # Countdown before contest starts
+  countdown: 5m
+  # Display method: ACTION_BAR or BOSS_BAR
+  display: BOSS_BAR
+  # BossBar color: BLUE, GREEN, RED, YELLOW, PURPLE, PINK, WHITE
+  bossbar-color: YELLOW
+  # Sound played when contest starts
+  start-sound: "entity.player.levelup"
+  # Sound played when contest ends
+  end-sound: "entity.firework_rocket.blast"
+
+# ============================================
+#     Bracket Definitions (by percentile)
+# ============================================
+# threshold = top X% of participants qualify
+# Brackets are checked top-down: first match wins
+# All commands run as console. Available placeholders:
+#   %player% - player name
+#   %crop% - crop the player farmed (lowercase)
+#   %score% - number of crops broken
+#   %bracket% - bracket name
+#   %position% - player's rank
+
+brackets:
+  DIAMOND:
+    threshold: 2
+    color: "&b"
+    display-name: "&b&lDIAMOND"
+    commands:
+      - "eco give %player% gold_medal 1"
+      - "eco give %player% silver_medal 1"
+      - "eco give %player% jacobs_ticket 35"
+      - "eco give %player% carnival_ticket 3"
+      - "eco give %player% turbo_crop_%crop%_1 1"
+  PLATINUM:
+    threshold: 5
+    color: "&7"
+    display-name: "&7&lPLATINUM"
+    commands:
+      - "eco give %player% gold_medal 1"
+      - "eco give %player% bronze_medal 1"
+      - "eco give %player% jacobs_ticket 30"
+      - "eco give %player% carnival_ticket 2"
+      - "eco give %player% turbo_crop_%crop%_1 1"
+  GOLD:
+    threshold: 10
+    color: "&6"
+    display-name: "&6&lGOLD"
+    commands:
+      - "eco give %player% gold_medal 1"
+      - "eco give %player% jacobs_ticket 25"
+      - "eco give %player% carnival_ticket 2"
+      - "eco give %player% turbo_crop_%crop%_1 1"
+  SILVER:
+    threshold: 30
+    color: "&f"
+    display-name: "&f&lSILVER"
+    commands:
+      - "eco give %player% silver_medal 1"
+      - "eco give %player% jacobs_ticket 15"
+      - "eco give %player% carnival_ticket 1"
+      - "eco give %player% turbo_crop_%crop%_1 1"
+  BRONZE:
+    threshold: 60
+    color: "&c"
+    display-name: "&c&lBRONZE"
+    commands:
+      - "eco give %player% bronze_medal 1"
+      - "eco give %player% jacobs_ticket 10"
+      - "eco give %player% carnival_ticket 1"
+      - "eco give %player% turbo_crop_%crop%_1 1"
+  NONE:
+    threshold: 100
+    color: "&7"
+    display-name: "&7NONE"
+    commands:
+      - "eco give %player% jacobs_ticket 1"
+
+# ============================================
+#           Event Definitions
+# ============================================
+# Each event defines which crops, duration, and worlds
+
+events:
+  summer_harvest:
+    display-name: "&eSummer Harvest"
+    duration: 10m
+    countdown: 2m
+    crops:
+      - WHEAT
+      - CARROTS
+      - POTATOES
+    worlds:
+      - SuperiorWorld
+
+  nether_harvest:
+    display-name: "&cNether Harvest"
+    duration: 8m
+    countdown: 2m
+    crops:
+      - NETHER_WART
+    worlds:
+      - SuperiorWorld
+
+  melon_madness:
+    display-name: "&aMelon Madness"
+    duration: 5m
+    countdown: 1m
+    crops:
+      - MELON
+      - PUMPKIN
+    worlds:
+      - SuperiorWorld
+
+# ============================================
+#         Event Rotation
+# ============================================
+# Events cycle through this list in order
+
+rotation:
+  - summer_harvest
+  - nether_harvest
+  - melon_madness
+
+# ============================================
+#            Messages
+# ============================================
+# Supports & color codes and placeholders
+
+messages:
+  contest-countdown: "&e&lJacob's Contest &8» &f%event% &fstarts in &6%time%&f! Crops: &6%crops%"
+  contest-started: "&e&lJacob's Contest &8» &f%event% &fhas begun! Break &6%crops% &fto compete!"
+  contest-ended: "&e&lJacob's Contest &8» &f%event% &fhas ended!"
+  results-header: "&e&l  ═══ Contest Results ═══"
+  bracket-result: "  %bracket_display% &8» &f%player% &7(#%position% — %score% crops)"
+  player-locked: "&e&lJacob's Contest &8» &fYou are now competing with &6%crop%&f!"
+  player-wrong-crop: "&e&lJacob's Contest &8» &cYou are locked to &6%crop%&c!"
+  not-in-event-world: "&e&lJacob's Contest &8» &cThis contest is not active in this world!"
+  no-active-contest: "&e&lJacob's Contest &8» &cNo contest is currently active."
+  contest-already-active: "&e&lJacob's Contest &8» &cA contest is already running!"
+  event-not-found: "&e&lJacob's Contest &8» &cEvent '%event%' not found!"
+  bossbar-text: "&e&lJacob's Contest &8| &f%crop%: &6%score% &8| &f⏱ &6%time%"
