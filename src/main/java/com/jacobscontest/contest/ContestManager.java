@@ -273,15 +273,19 @@ public class ContestManager {
     //           Participant Tracking
     // ========================================
 
-    public void handleCropBreak(Player player, Material blockType) {
-        if (!contestActive) return;
-        if (activeEvent == null) return;
+    /**
+     * Validates the crop break and handles lock-in. Called from BlockBreakEvent.
+     * Returns true if this is a valid contest break that should be scored.
+     */
+    public boolean validateAndLockCrop(Player player, Material blockType) {
+        if (!contestActive) return false;
+        if (activeEvent == null) return false;
 
         // Check world
-        if (!activeEvent.isWorldValid(player.getWorld().getName())) return;
+        if (!activeEvent.isWorldValid(player.getWorld().getName())) return false;
 
         // Check if this block is a valid crop for this event
-        if (!activeEvent.isCropValid(blockType)) return;
+        if (!activeEvent.isCropValid(blockType)) return false;
 
         UUID uuid = player.getUniqueId();
         PlayerContestData data = participants.computeIfAbsent(uuid,
@@ -292,19 +296,38 @@ public class ContestManager {
             data.lockCrop(blockType);
             String lockMsg = getMessage("player-locked")
                     .replace("%crop%", data.getCropName());
-            player.sendMessage(MessageUtil.colorize(lockMsg));
+            player.sendMessage(MessageUtil.toComponent(lockMsg));
         }
 
         // Check if breaking the right crop
         if (data.getLockedCrop() != blockType) {
-            // Wrong crop — inform player
             String wrongMsg = getMessage("player-wrong-crop")
                     .replace("%crop%", data.getCropName());
-            player.sendMessage(MessageUtil.colorize(wrongMsg));
-            return;
+            player.sendMessage(MessageUtil.toComponent(wrongMsg));
+            return false;
         }
 
-        data.addScore(1);
+        return true;
+    }
+
+    /**
+     * Add score points to a player. Called from BlockDropItemEvent after counting drops.
+     */
+    public void addPlayerScore(UUID playerId, int points) {
+        PlayerContestData data = participants.get(playerId);
+        if (data != null) {
+            data.addScore(points);
+        }
+    }
+
+    /**
+     * Legacy method: handle crop break with flat 1 point per block.
+     * Kept for backwards compatibility but prefer the drop-based scoring.
+     */
+    public void handleCropBreak(Player player, Material blockType) {
+        if (validateAndLockCrop(player, blockType)) {
+            addPlayerScore(player.getUniqueId(), 1);
+        }
     }
 
     // ========================================
