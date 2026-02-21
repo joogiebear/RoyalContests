@@ -5,40 +5,29 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.*;
+import java.util.Collection;
 
 /**
- * Listens for crop breaks and counts actual item drops during an active contest.
- * 
- * Uses BlockBreakEvent to validate the crop and lock the player in,
- * then BlockDropItemEvent to count actual drops (respects Fortune, Eco enchants, pets, etc.)
+ * Listens for crop breaks during an active contest.
+ *
+ * Scores based on the actual item drops from the block (respects Fortune, Eco enchants, etc.)
+ * Uses BlockBreakEvent with getDrops() to calculate points in a single event.
  */
 public class CropBreakListener implements Listener {
 
     private final JacobsContest plugin;
 
-    // Track which block breaks were valid contest crops (block location -> player UUID)
-    // Used to link BlockBreakEvent to the subsequent BlockDropItemEvent
-    private final Map<String, UUID> pendingBreaks = new HashMap<>();
-
     public CropBreakListener(JacobsContest plugin) {
         this.plugin = plugin;
     }
 
-    /**
-     * Phase 1: Validate the crop break and lock the player into their crop.
-     * We record the break so we can score the drops in BlockDropItemEvent.
-     */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         if (!plugin.getContestManager().isContestActive()) return;
@@ -55,65 +44,40 @@ public class CropBreakListener implements Listener {
             }
         }
 
-        // Check if this is a valid contest crop and handle lock-in
+        // Validate crop and lock player in
         if (!plugin.getContestManager().validateAndLockCrop(player, blockType)) {
             return;
         }
 
-        // Record this as a pending break so we can score drops
-        String locKey = block.getWorld().getName() + ":" + block.getX() + ":" + block.getY() + ":" + block.getZ();
-        pendingBreaks.put(locKey, player.getUniqueId());
+        // Calculate points from the drops this block will produce
+        // getDrops() respects Fortune and other vanilla enchantments
+        Collection<ItemStack> drops = block.getDrops(player.getInventory().getItemInMainHand(), player);
 
-        // Clean up old entries (safety net)
-        if (pendingBreaks.size() > 1000) {
-            pendingBreaks.clear();
-        }
-    }
-
-    /**
-     * Phase 2: Count actual item drops from the crop break.
-     * This fires AFTER BlockBreakEvent and contains the real drops
-     * (modified by Fortune, Eco enchants, pets, talismans, etc.)
-     */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onBlockDropItem(BlockDropItemEvent event) {
-        if (!plugin.getContestManager().isContestActive()) return;
-
-        Block block = event.getBlock();
-        String locKey = event.getBlock().getWorld().getName() + ":" + event.getBlockState().getX() + ":" + event.getBlockState().getY() + ":" + event.getBlockState().getZ();
-
-        UUID playerId = pendingBreaks.remove(locKey);
-        if (playerId == null) return; // Not a tracked contest break
-
-        // Count points from all dropped items
         int totalPoints = 0;
-        for (Item item : event.getItems()) {
-            ItemStack stack = item.getItemStack();
+        for (ItemStack stack : drops) {
             int points = getPointValue(stack);
             totalPoints += points * stack.getAmount();
         }
 
-        if (totalPoints > 0) {
-            plugin.getContestManager().addPlayerScore(playerId, totalPoints);
+        // If no configured drops matched, give 1 point as baseline
+        if (totalPoints <= 0) {
+            totalPoints = 1;
         }
+
+        plugin.getContestManager().addPlayerScore(player.getUniqueId(), totalPoints);
     }
 
     /**
-     * Get the point value for an item stack.
-     * Checks custom item IDs (ecoitems:enchanted_wheat) first, then vanilla material.
+     * Get the point value for an item stack from config.
      */
     private int getPointValue(ItemStack stack) {
-        // Check for custom item names in the point-values config
-        // This handles EcoItems, custom named items, etc.
-        ItemMeta meta = stack.getItemMeta();
-        if (meta != null) {
-            // Check by custom model data or display name for eco items
-            // The config allows "ecoitems:item_id" format
-            String customId = getEcoItemId(stack);
-            if (customId != null) {
-                int customPoints = plugin.getConfig().getInt("point-values." + customId, -1);
-                if (customPoints > 0) return customPoints;
-            }
+        if (stack == null) return 0;
+
+        // Check for EcoItems via PDC
+        String ecoId = getEcoItemId(stack);
+        if (ecoId != null) {
+            int customPoints = plugin.getConfig().getInt("point-values." + ecoId, -1);
+            if (customPoints > 0) return customPoints;
         }
 
         // Fall back to vanilla material name
@@ -123,20 +87,20 @@ public class CropBreakListener implements Listener {
 
     /**
      * Attempt to get an EcoItems ID from the item's persistent data.
-     * EcoItems stores the item ID in the PDC under the "ecoitems" namespace.
      */
     private String getEcoItemId(ItemStack stack) {
         if (stack == null || !stack.hasItemMeta()) return null;
 
-        // Try to read the eco item id from PDC
-        ItemMeta meta = stack.getItemMeta();
-        org.bukkit.NamespacedKey key = new org.bukkit.NamespacedKey("ecoitems", "item");
-        org.bukkit.persistence.PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        try {
+            var meta = stack.getItemMeta();
+            var key = new org.bukkit.NamespacedKey("ecoitems", "item");
+            var pdc = meta.getPersistentDataContainer();
 
-        if (pdc.has(key, org.bukkit.persistence.PersistentDataType.STRING)) {
-            String ecoId = pdc.get(key, org.bukkit.persistence.PersistentDataType.STRING);
-            return "ecoitems:" + ecoId;
-        }
+            if (pdc.has(key, org.bukkit.persistence.PersistentDataType.STRING)) {
+                String ecoId = pdc.get(key, org.bukkit.persistence.PersistentDataType.STRING);
+                return "ecoitems:" + ecoId;
+            }
+        } catch (Exception ignored) {}
 
         return null;
     }
