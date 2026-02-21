@@ -2,8 +2,11 @@ package com.jacobscontest;
 
 import com.jacobscontest.commands.ContestCommand;
 import com.jacobscontest.contest.ContestManager;
+import com.jacobscontest.gui.MenuListener;
 import com.jacobscontest.listeners.CropBreakListener;
 import com.jacobscontest.placeholders.ContestPlaceholders;
+import com.jacobscontest.storage.SQLiteStorage;
+import com.jacobscontest.storage.StorageProvider;
 import com.jacobscontest.util.ConfigManager;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -13,6 +16,7 @@ public final class JacobsContest extends JavaPlugin {
     private static JacobsContest instance;
     private ContestManager contestManager;
     private ConfigManager configManager;
+    private StorageProvider storage;
 
     @Override
     public void onEnable() {
@@ -22,14 +26,23 @@ public final class JacobsContest extends JavaPlugin {
         configManager = new ConfigManager(this);
         configManager.loadAll();
 
+        // Initialize storage
+        String storageType = getConfig().getString("settings.storage", "sqlite");
+        // MySQL support can be added later — for now, always use SQLite
+        storage = new SQLiteStorage(this);
+        storage.init();
+
         contestManager = new ContestManager(this);
 
         // Register listeners
         getServer().getPluginManager().registerEvents(new CropBreakListener(this), this);
+        getServer().getPluginManager().registerEvents(new MenuListener(this), this);
 
         // Register commands
-        getCommand("jacobscontest").setExecutor(new ContestCommand(this));
-        getCommand("jacobscontest").setTabCompleter(new ContestCommand(this));
+        ContestCommand cmdHandler = new ContestCommand(this);
+        getCommand("jacobscontest").setExecutor(cmdHandler);
+        getCommand("jacobscontest").setTabCompleter(cmdHandler);
+        getCommand("contests").setExecutor(cmdHandler);
 
         // Register PlaceholderAPI expansion
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
@@ -45,6 +58,9 @@ public final class JacobsContest extends JavaPlugin {
         if (contestManager != null && contestManager.isContestActive()) {
             contestManager.forceStop();
         }
+        if (storage != null) {
+            storage.shutdown();
+        }
         getLogger().info("Jacob's Contest has been disabled!");
     }
 
@@ -58,5 +74,9 @@ public final class JacobsContest extends JavaPlugin {
 
     public ConfigManager getConfigManager() {
         return configManager;
+    }
+
+    public StorageProvider getStorage() {
+        return storage;
     }
 }

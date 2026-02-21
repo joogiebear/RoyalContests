@@ -4,11 +4,13 @@ import com.jacobscontest.JacobsContest;
 import com.jacobscontest.contest.ContestEvent;
 import com.jacobscontest.contest.ContestManager;
 import com.jacobscontest.contest.PlayerContestData;
+import com.jacobscontest.gui.ContestMenu;
 import com.jacobscontest.util.MessageUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -28,6 +30,16 @@ public class ContestCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
+
+        // /contests command — open GUI for players
+        if (command.getName().equalsIgnoreCase("contests")) {
+            if (sender instanceof Player player) {
+                new ContestMenu(plugin).open(player);
+            } else {
+                sender.sendMessage(MessageUtil.toComponent("&cThis command can only be used by players!"));
+            }
+            return true;
+        }
 
         if (args.length == 0) {
             sendHelp(sender);

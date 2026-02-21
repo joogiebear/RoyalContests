@@ -6,6 +6,21 @@
 #   brackets.yml - Bracket definitions and rewards
 #   events.yml   - Event definitions and rotation
 
+# ============================================
+#            Data Storage
+# ============================================
+# Options: sqlite (local file) or mysql (remote database)
+# MySQL support coming soon — currently uses SQLite.
+storage:
+  type: sqlite
+  # MySQL settings (for future use)
+  # mysql:
+  #   host: localhost
+  #   port: 3306
+  #   database: jacobscontest
+  #   username: root
+  #   password: ""
+
 settings:
   # Default contest duration (can be overridden per event in events.yml)
   default-duration: 20m

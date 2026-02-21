@@ -8,11 +8,18 @@ softdepend:
   - PlaceholderAPI
 commands:
   jacobscontest:
-    description: Manage Jacob's Contest events
+    description: Manage Jacob's Contest events (admin)
     usage: /jacobscontest <start|stop|reload|status> [event]
     permission: jacobscontest.admin
     aliases: [jc, jacobs]
+  contests:
+    description: Open the Jacob's Contest menu
+    usage: /contests
+    permission: jacobscontest.menu
 permissions:
   jacobscontest.admin:
-    description: Access to all Jacob's Contest commands
+    description: Access to all Jacob's Contest admin commands
     default: op
+  jacobscontest.menu:
+    description: Open the contest menu
+    default: true

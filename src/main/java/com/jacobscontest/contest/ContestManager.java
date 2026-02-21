@@ -1,6 +1,8 @@
 package com.jacobscontest.contest;
 
 import com.jacobscontest.JacobsContest;
+import com.jacobscontest.storage.PendingReward;
+import com.jacobscontest.storage.PlayerStats;
 import com.jacobscontest.util.ConfigManager;
 import com.jacobscontest.util.MessageUtil;
 import net.kyori.adventure.bossbar.BossBar;
@@ -467,7 +469,7 @@ public class ContestManager {
             broadcastMessage(getMessage("no-qualified"));
         }
 
-        // Award qualified players
+        // Award qualified players — save pending rewards + update stats
         for (int i = 0; i < qualified.size(); i++) {
             PlayerContestData data = qualified.get(i);
             int position = i + 1;
@@ -478,6 +480,11 @@ public class ContestManager {
             // Find matching bracket
             Bracket bracket = findBracket(percentile);
             if (bracket == null) continue;
+
+            // Update player stats and check for personal best
+            PlayerStats stats = plugin.getStorage().getPlayerStats(data.getPlayerId(), data.getCropId());
+            boolean newPersonalBest = stats.updateAfterContest(data.getScore(), bracket.name());
+            plugin.getStorage().savePlayerStats(stats);
 
             // Broadcast result line
             String resultMsg = getMessage("bracket-result")
@@ -490,21 +497,47 @@ public class ContestManager {
                     .replace("%crop%", data.getCropId());
             broadcastMessage(resultMsg);
 
-            // Execute reward commands
-            for (String cmd : bracket.commands()) {
-                String finalCmd = cmd
-                        .replace("%player%", data.getPlayerName())
-                        .replace("%crop%", data.getCropId())
-                        .replace("%score%", String.valueOf(data.getScore()))
-                        .replace("%bracket%", bracket.name())
-                        .replace("%position%", String.valueOf(position));
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), finalCmd);
+            // Announce personal best
+            if (newPersonalBest) {
+                String pbMsg = "&e&lNEW PERSONAL BEST! &f" + data.getPlayerName()
+                        + " &7set a new PB of &6" + data.getScore() + " &7for &6" + data.getCropName() + "&7!";
+                broadcastMessage(pbMsg);
+            }
+
+            // Save as pending reward (claim-based, not auto-claim)
+            PendingReward reward = new PendingReward(
+                    data.getPlayerId(),
+                    data.getPlayerName(),
+                    activeEvent != null ? activeEvent.displayName() : "Contest",
+                    data.getCropId(),
+                    data.getScore(),
+                    stats.getPersonalBest(),
+                    bracket.name(),
+                    bracket.displayName(),
+                    position,
+                    totalQualified,
+                    bracket.commands()
+            );
+            plugin.getStorage().savePendingReward(reward);
+
+            // Notify player to claim rewards
+            Player player = Bukkit.getPlayer(data.getPlayerId());
+            if (player != null && player.isOnline()) {
+                player.sendMessage(MessageUtil.toComponent(
+                        "&e&lJacob's Contest &8» &aYou earned rewards! Use &6/contests &ato claim them!"));
             }
         }
 
-        // Notify players who didn't meet minimum score
+        // Update stats for unqualified players too (they still participated)
         for (PlayerContestData data : sorted) {
             if (data.getScore() < minimumScore) {
+                // Still save their stats (participation counts)
+                if (data.getScore() > 0) {
+                    PlayerStats stats = plugin.getStorage().getPlayerStats(data.getPlayerId(), data.getCropId());
+                    stats.updateAfterContest(data.getScore(), "NONE");
+                    plugin.getStorage().savePlayerStats(stats);
+                }
+
                 Player player = Bukkit.getPlayer(data.getPlayerId());
                 if (player != null && player.isOnline()) {
                     String msg = minimumScoreMessage
