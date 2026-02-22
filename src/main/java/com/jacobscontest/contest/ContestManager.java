@@ -1,6 +1,7 @@
 package com.jacobscontest.contest;
 
 import com.jacobscontest.JacobsContest;
+import com.jacobscontest.scoring.*;
 import com.jacobscontest.storage.PendingReward;
 import com.jacobscontest.storage.PlayerStats;
 import com.jacobscontest.util.ConfigManager;
@@ -57,6 +58,9 @@ public class ContestManager {
     // Cooldown for deny messages (prevent spam)
     private final Map<UUID, Long> denyMessageCooldown = new HashMap<>();
     private static final long DENY_COOLDOWN_MS = 5000; // 5 seconds
+
+    // Scoring provider
+    private ScoringProvider scoringProvider;
 
     public ContestManager(JacobsContest plugin) {
         this.plugin = plugin;
@@ -136,8 +140,38 @@ public class ContestManager {
         minimumScoreMessage = config.getString("settings.minimum-score-message",
                 "&cYou need at least &6%minimum% crops &cto earn rewards!");
 
+        // Initialize scoring provider
+        initScoringProvider();
+
         // Start auto-rotation if enabled
         startAutoRotation();
+    }
+
+    // ========================================
+    //           Scoring Provider
+    // ========================================
+
+    private void initScoringProvider() {
+        String mode = plugin.getConfig().getString("scoring.mode", "BLOCK_BREAK").toUpperCase();
+
+        scoringProvider = switch (mode) {
+            case "AURORA_COLLECTIONS" -> new AuroraCollectionsScoring(plugin);
+            case "PLACEHOLDER" -> new PlaceholderScoring(plugin);
+            case "DROPS" -> new DropScoring(plugin);
+            default -> new BlockBreakScoring(plugin);
+        };
+
+        // Register event listener if the scoring provider has one
+        if (scoringProvider.getListener() != null) {
+            plugin.getServer().getPluginManager().registerEvents(
+                    scoringProvider.getListener(), plugin);
+        }
+
+        plugin.getLogger().info("Scoring mode: " + mode);
+    }
+
+    public ScoringProvider getScoringProvider() {
+        return scoringProvider;
     }
 
     // ========================================
@@ -413,9 +447,8 @@ public class ContestManager {
         if (!data.isLocked()) {
             data.lockCrop(blockType);
 
-            // Take snapshot of AuroraCollections count
-            long snapshot = getCollectionCount(player, data.getCollectionId());
-            data.setCollectionSnapshot(snapshot);
+            // Let the scoring provider take any snapshots
+            scoringProvider.onPlayerLockIn(player, data);
 
             String lockMsg = getMessage("player-locked")
                     .replace("%crop%", data.getCropName());
@@ -434,39 +467,12 @@ public class ContestManager {
     }
 
     /**
-     * Update all participant scores from AuroraCollections.
+     * Update all participant scores via the active scoring provider.
      * Called periodically by the display updater and at contest end.
      */
     public void updateAllScores() {
-        for (PlayerContestData data : participants.values()) {
-            if (!data.isLocked()) continue;
-
-            Player player = Bukkit.getPlayer(data.getPlayerId());
-            if (player == null || !player.isOnline()) continue;
-
-            long currentCount = getCollectionCount(player, data.getCollectionId());
-            int score = (int) Math.max(0, currentCount - data.getCollectionSnapshot());
-            data.setScore(score);
-        }
-    }
-
-    /**
-     * Get a player's AuroraCollections count for a specific crop.
-     * Uses PAPI placeholder: %aurora_collections_[category]_[id]_count_raw%
-     */
-    private long getCollectionCount(Player player, String collectionId) {
-        if (collectionId == null) return 0;
-
-        try {
-            String category = plugin.getConfig().getString("collection-category", "farming");
-            String placeholder = "%aurora_collections_" + category + "_" + collectionId + "_count_raw%";
-            String resolved = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, placeholder);
-
-            // Remove any formatting (commas, etc.)
-            resolved = resolved.replace(",", "").replace(".", "").trim();
-            return Long.parseLong(resolved);
-        } catch (Exception e) {
-            return 0;
+        if (scoringProvider != null) {
+            scoringProvider.updateScores(participants);
         }
     }
 

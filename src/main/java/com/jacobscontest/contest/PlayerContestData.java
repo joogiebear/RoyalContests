@@ -75,14 +75,14 @@ public class PlayerContestData {
     }
 
     /**
-     * Get the AuroraCollections collection ID for this crop.
-     * Reads from config's collection-ids mapping, falls back to material name.
+     * Get the collection ID for this crop.
+     * Reads from config's scoring.aurora.collection-ids mapping, falls back to material name.
      */
     public String getCollectionId() {
         if (lockedCrop == null) return null;
         // Try config mapping first
         String configId = com.jacobscontest.JacobsContest.getInstance()
-                .getConfig().getString("collection-ids." + lockedCrop.name());
+                .getConfig().getString("scoring.aurora.collection-ids." + lockedCrop.name());
         if (configId != null) return configId;
         // Fallback
         return lockedCrop.name().toLowerCase();
