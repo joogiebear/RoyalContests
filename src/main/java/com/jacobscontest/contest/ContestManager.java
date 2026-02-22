@@ -305,6 +305,7 @@ public class ContestManager {
                     this.cancel();
                     return;
                 }
+                updateAllScores();
                 updateDisplay();
             }
         }.runTaskTimer(plugin, 0L, 20L); // Update every second
@@ -320,6 +321,9 @@ public class ContestManager {
 
         // Remove boss bar
         removeBossBar();
+
+        // Final score update from AuroraCollections
+        updateAllScores();
 
         // Broadcast end
         String endMsg = getMessage("contest-ended")
@@ -373,7 +377,8 @@ public class ContestManager {
 
     /**
      * Validates the crop break and handles lock-in. Called from BlockBreakEvent.
-     * Returns true if this is a valid contest break that should be scored.
+     * On first break, takes a snapshot of the player's AuroraCollections count.
+     * Returns true if this is a valid contest break.
      */
     public boolean validateAndLockCrop(Player player, Material blockType) {
         if (!contestActive) return false;
@@ -407,6 +412,11 @@ public class ContestManager {
         // Lock-in mechanic
         if (!data.isLocked()) {
             data.lockCrop(blockType);
+
+            // Take snapshot of AuroraCollections count
+            long snapshot = getCollectionCount(player, data.getCollectionId());
+            data.setCollectionSnapshot(snapshot);
+
             String lockMsg = getMessage("player-locked")
                     .replace("%crop%", data.getCropName());
             player.sendMessage(MessageUtil.toComponent(lockMsg));
@@ -424,22 +434,49 @@ public class ContestManager {
     }
 
     /**
-     * Add score points to a player. Called from BlockDropItemEvent after counting drops.
+     * Update all participant scores from AuroraCollections.
+     * Called periodically by the display updater and at contest end.
+     */
+    public void updateAllScores() {
+        for (PlayerContestData data : participants.values()) {
+            if (!data.isLocked()) continue;
+
+            Player player = Bukkit.getPlayer(data.getPlayerId());
+            if (player == null || !player.isOnline()) continue;
+
+            long currentCount = getCollectionCount(player, data.getCollectionId());
+            int score = (int) Math.max(0, currentCount - data.getCollectionSnapshot());
+            data.setScore(score);
+        }
+    }
+
+    /**
+     * Get a player's AuroraCollections count for a specific crop.
+     * Uses PAPI placeholder: %aurora_collections_[category]_[id]_count_raw%
+     */
+    private long getCollectionCount(Player player, String collectionId) {
+        if (collectionId == null) return 0;
+
+        try {
+            String category = plugin.getConfig().getString("collection-category", "farming");
+            String placeholder = "%aurora_collections_" + category + "_" + collectionId + "_count_raw%";
+            String resolved = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(player, placeholder);
+
+            // Remove any formatting (commas, etc.)
+            resolved = resolved.replace(",", "").replace(".", "").trim();
+            return Long.parseLong(resolved);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Add score points to a player directly (fallback method).
      */
     public void addPlayerScore(UUID playerId, int points) {
         PlayerContestData data = participants.get(playerId);
         if (data != null) {
             data.addScore(points);
-        }
-    }
-
-    /**
-     * Legacy method: handle crop break with flat 1 point per block.
-     * Kept for backwards compatibility but prefer the drop-based scoring.
-     */
-    public void handleCropBreak(Player player, Material blockType) {
-        if (validateAndLockCrop(player, blockType)) {
-            addPlayerScore(player.getUniqueId(), 1);
         }
     }
 
