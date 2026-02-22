@@ -41,7 +41,7 @@ settings:
   skill-requirement:
     enabled: true
     # PAPI placeholder to check (without % signs)
-    placeholder: "ecoskills_farming_level"
+    placeholder: "ecoskills_farming"
     # Minimum value required
     minimum: 10
     # Message when player doesn't qualify
