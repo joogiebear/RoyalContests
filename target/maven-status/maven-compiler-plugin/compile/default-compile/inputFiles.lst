@@ -14,6 +14,7 @@
 /Users/aibox/Desktop/JacobsContest/src/main/java/com/jacobscontest/scoring/DropScoring.java
 /Users/aibox/Desktop/JacobsContest/src/main/java/com/jacobscontest/scoring/PlaceholderScoring.java
 /Users/aibox/Desktop/JacobsContest/src/main/java/com/jacobscontest/scoring/ScoringProvider.java
+/Users/aibox/Desktop/JacobsContest/src/main/java/com/jacobscontest/storage/MySQLStorage.java
 /Users/aibox/Desktop/JacobsContest/src/main/java/com/jacobscontest/storage/PendingReward.java
 /Users/aibox/Desktop/JacobsContest/src/main/java/com/jacobscontest/storage/PlayerStats.java
 /Users/aibox/Desktop/JacobsContest/src/main/java/com/jacobscontest/storage/SQLiteStorage.java

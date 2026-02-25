@@ -1,5 +1,5 @@
 name: JacobsContest
-version: '1.0.0'
+version: '1.1.0'
 main: com.jacobscontest.JacobsContest
 api-version: '1.21'
 authors: [VoltexaLeader]

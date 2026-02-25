@@ -5,6 +5,7 @@ import com.jacobscontest.contest.ContestManager;
 import com.jacobscontest.gui.MenuListener;
 import com.jacobscontest.listeners.CropBreakListener;
 import com.jacobscontest.placeholders.ContestPlaceholders;
+import com.jacobscontest.storage.MySQLStorage;
 import com.jacobscontest.storage.SQLiteStorage;
 import com.jacobscontest.storage.StorageProvider;
 import com.jacobscontest.util.ConfigManager;
@@ -26,10 +27,15 @@ public final class JacobsContest extends JavaPlugin {
         configManager = new ConfigManager(this);
         configManager.loadAll();
 
-        // Initialize storage
-        String storageType = getConfig().getString("settings.storage", "sqlite");
-        // MySQL support can be added later — for now, always use SQLite
-        storage = new SQLiteStorage(this);
+        // Initialize storage (sqlite or mysql)
+        String storageType = getConfig().getString("storage.type", "sqlite").toLowerCase();
+        if ("mysql".equals(storageType)) {
+            getLogger().info("Using MySQL storage...");
+            storage = new MySQLStorage(this);
+        } else {
+            getLogger().info("Using SQLite storage...");
+            storage = new SQLiteStorage(this);
+        }
         storage.init();
 
         contestManager = new ContestManager(this);

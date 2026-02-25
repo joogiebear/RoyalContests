@@ -10,16 +10,17 @@
 #            Data Storage
 # ============================================
 # Options: sqlite (local file) or mysql (remote database)
-# MySQL support coming soon — currently uses SQLite.
+# SQLite is simple and requires no setup — great for single servers.
+# MySQL is recommended for networks or if you want external access (web leaderboards, etc.)
 storage:
   type: sqlite
-  # MySQL settings (for future use)
-  # mysql:
-  #   host: localhost
-  #   port: 3306
-  #   database: jacobscontest
-  #   username: root
-  #   password: ""
+  # MySQL settings (only used when type is set to 'mysql')
+  mysql:
+    host: localhost
+    port: 3306
+    database: jacobscontest
+    username: root
+    password: ""
 
 settings:
   # Default contest duration (can be overridden per event in events.yml)
