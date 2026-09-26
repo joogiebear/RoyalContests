@@ -1,47 +1,25 @@
-# JacobsContest - Project Memory
+# RoyalContests — project notes
 
-## What It Is
-Jacob's Contest — a Paper/Minecraft plugin that runs Hypixel Skyblock-style crop farming contests.
-Players compete to harvest the most crops during timed events and earn bracket-based rewards.
+Formerly JacobsContest. Rewritten as **RoyalContests** (`com.mystipixel.royalcontests`) to join the
+Royal suite: Paper 26.2, Java 25, calendar versioning, same CI as RoyalGarden.
 
-## GitHub
-https://github.com/joogiebear/JacobsContest
-- **main** → v1.0.0 (stable, SQLite only)
-- **development** → v1.1.0 (MySQL support added, needs testing)
+## Why the rewrite
+JacobsContest 1.x could be farmed for free and paid out twice:
+- DROPS mode scored any block (breaking dirt = 1 point); BLOCK_BREAK counted unripe crops; placed
+  melons/pumpkins/cane counted.
+- `/jc reload` re-registered the scoring listener (double points) and force-ended the contest.
+- One shared boss bar showed everyone the last player's score.
+- Claims ran commands before marking the reward claimed, so double-clicks duplicated rewards.
+- All crops ranked together (Hypixel ranks each crop separately); DB calls on the main thread.
 
-## Build
-- Maven project (`pom.xml`)
-- Java 21, Paper API 1.21.4
-- `mvn clean package` → jar in `target/`
-- HikariCP 5.1.0 shaded in for MySQL connection pooling
+## Layout
+- `contest/` ContestService (one 1s ticker: schedule → countdown → running → results), Contest,
+  Participant, Ranking (pure), Schedule (pure), EventRegistry, BracketTable, ContestDisplay
+- `scoring/HarvestListener` all counting rules; `crop/` CropRegistry + PlacedBlocks (chunk PDC)
+- `storage/` Database (Hikari, single worker thread, SQLite/MySQL, old tables + contest_results),
+  RewardService (atomic claims), StatsCache (for PAPI/menus)
+- `gui/` holder-based menus from menus.yml; `command/`; `hook/` PAPI
 
-## Current State
-- v1.0.0: Fully working, SQLite storage, shipped
-- v1.1.0 (dev branch): MySQL storage added — NOT yet tested
-  - Config toggle: `storage.type: sqlite` or `storage.type: mysql`
-  - MySQL config block in config.yml (host/port/database/username/password)
-
-## Architecture
-- `StorageProvider` interface — implemented by `SQLiteStorage` and `MySQLStorage`
-- `ContestManager` — runs contests in-memory (local to each server)
-- `ContestEvent` — loaded from events.yml, defines crop + duration
-- `Bracket` system — DIAMOND > PLATINUM > GOLD > SILVER > BRONZE based on score thresholds
-- Scoring modes: `AURORA_COLLECTIONS`, `PLACEHOLDER`, `DROPS`, `BLOCK_BREAK`
-- PlaceholderAPI integration for skill requirements and scoring
-
-## Multi-Server Design
-- Garden/farming is its own dedicated server — only one server runs contests
-- MySQL allows external access (web leaderboards, cross-server stats lookup)
-- Redis NOT needed — single server handles all contests
-- If someone wanted true multi-server contests in the future → would need Redis pub/sub
-
-## TODO
-- [ ] Test MySQL branch on a real server
-- [ ] Merge development → main once MySQL confirmed working
-- [ ] Consider leaderboard GUI using PlaceholderAPI + MySQL queries
-
-## Key Config Files
-- `config.yml` — storage type, contest settings, scoring mode, skill requirements
-- `events.yml` — contest event rotation definitions
-- `brackets.yml` — bracket thresholds and reward commands
-- `lang.yml` — all player-facing messages
+## Status
+- Builds in CI. Not yet run on a live server — test scoring modes, the interval schedule and the
+  data.db migration on the test instance first.

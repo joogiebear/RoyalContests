@@ -1,0 +1,176 @@
+package com.mystipixel.royalcontests.storage;
+
+import com.mystipixel.royalcontests.config.Lang;
+import com.mystipixel.royalcontests.config.Settings;
+import com.mystipixel.royalcontests.config.Text;
+import com.mystipixel.royalcontests.contest.Bracket;
+import com.mystipixel.royalcontests.contest.BracketTable;
+import com.mystipixel.royalcontests.storage.Records.PendingReward;
+import com.mystipixel.royalcontests.storage.Records.Result;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Consumer;
+
+/**
+ * Results, stats and rewards: what happens to a placing once a contest is over.
+ *
+ * <p>A reward is saved with its actions spelled out — the bracket's commands with the player's
+ * placeholders already filled — so editing {@code brackets.yml} later never changes a reward someone has
+ * already earned. It waits in {@code /contests} until claimed, unless {@code rewards.auto-claim} is on
+ * and the player is online.
+ */
+public final class RewardService {
+
+    private static final String MESSAGE_PREFIX = "[message] ";
+
+    private final Plugin plugin;
+    private final Database database;
+    private final Settings settings;
+    private final Lang lang;
+    private final BracketTable brackets;
+    private final StatsCache cache;
+    /** Rewards being claimed right now, so a double-click does not even reach the database twice. */
+    private final Set<Integer> claiming = new HashSet<>();
+
+    public RewardService(Plugin plugin, Database database, Settings settings, Lang lang,
+                         BracketTable brackets, StatsCache cache) {
+        this.plugin = plugin;
+        this.database = database;
+        this.settings = settings;
+        this.lang = lang;
+        this.brackets = brackets;
+        this.cache = cache;
+    }
+
+    /**
+     * Record one placing: the result row, the player's stats, and — if they reached a bracket — a reward.
+     *
+     * @param shuttingDown true when the contest is ending because the server is stopping; rewards are
+     *                     then always left to claim, never auto-claimed into a player who is leaving
+     */
+    public void record(Result result, String eventName, Bracket bracket, String cropName, boolean shuttingDown) {
+        PendingReward reward = bracket == null ? null : new PendingReward(-1, result.player(), result.playerName(),
+                eventName, result.crop(), result.score(), result.score(), bracket.id(), bracket.displayName(),
+                result.position(), result.total(), actions(bracket, result, cropName), System.currentTimeMillis());
+        database.record(result, reward, brackets::rank).thenAccept(recorded -> onMain(() -> {
+            cache.invalidate(result.player());
+            Player player = Bukkit.getPlayer(result.player());
+            if (player == null) {
+                return;
+            }
+            if (recorded.newBest()) {
+                lang.send(player, "personal-best", "%crop%", cropName, "%score%", String.valueOf(result.score()));
+            }
+            if (reward == null || recorded.rewardId() <= 0) {
+                return;
+            }
+            if (settings.autoClaim() && !shuttingDown) {
+                claim(player, withId(reward, recorded.rewardId()), ignored -> { });
+            } else {
+                lang.send(player, "reward-waiting", "%bracket%", bracket.displayName(), "%crop%", cropName);
+            }
+        }));
+    }
+
+    private static PendingReward withId(PendingReward r, int id) {
+        return new PendingReward(id, r.player(), r.playerName(), r.eventName(), r.crop(), r.score(),
+                r.personalBest(), r.bracket(), r.bracketDisplay(), r.position(), r.total(), r.actions(), r.timestamp());
+    }
+
+    /** A bracket's commands and messages, with this result's placeholders filled in. */
+    private static List<String> actions(Bracket bracket, Result result, String cropName) {
+        String[] placeholders = {"%player%", result.playerName(), "%uuid%", result.player().toString(),
+                "%crop%", result.crop(), "%crop_name%", cropName, "%score%", String.valueOf(result.score()),
+                "%position%", String.valueOf(result.position()), "%participants%", String.valueOf(result.total()),
+                "%bracket%", bracket.id()};
+        List<String> out = new ArrayList<>();
+        for (String command : bracket.commands()) {
+            // "||" separates actions in storage, so it cannot appear inside one.
+            out.add(Text.fill(command, placeholders).replace("||", "|"));
+        }
+        for (String message : bracket.messages()) {
+            out.add(MESSAGE_PREFIX + Text.fill(message, placeholders).replace("||", "|"));
+        }
+        return out;
+    }
+
+    /**
+     * Claim one reward. The database flips it from unclaimed to claimed atomically, and only then are
+     * its actions run — so however fast someone clicks, a reward pays out once.
+     */
+    public void claim(Player player, PendingReward reward, Consumer<Boolean> done) {
+        if (!claiming.add(reward.id())) {
+            done.accept(false);
+            return;
+        }
+        database.claim(reward.id(), player.getUniqueId()).whenComplete((won, error) -> onMain(() -> {
+            claiming.remove(reward.id());
+            boolean ok = error == null && Boolean.TRUE.equals(won);
+            if (ok) {
+                run(player, reward);
+                cache.invalidate(player.getUniqueId());
+                settings.playSound(player, "claim");
+                lang.send(player, "reward-claimed", "%bracket%", reward.bracketDisplay(),
+                        "%event%", reward.eventName());
+            }
+            done.accept(ok);
+        }));
+    }
+
+    /** Claim everything waiting for a player. */
+    public void claimAll(Player player, Consumer<Integer> done) {
+        database.pending(player.getUniqueId()).thenAccept(rewards -> onMain(() -> {
+            if (rewards.isEmpty()) {
+                done.accept(0);
+                return;
+            }
+            int[] claimed = {0};
+            int[] remaining = {rewards.size()};
+            for (PendingReward reward : rewards) {
+                claim(player, reward, ok -> {
+                    if (ok) {
+                        claimed[0]++;
+                    }
+                    if (--remaining[0] == 0) {
+                        done.accept(claimed[0]);
+                    }
+                });
+            }
+        }));
+    }
+
+    private void run(Player player, PendingReward reward) {
+        for (String action : reward.actions()) {
+            String line = action.replace("%player%", player.getName());
+            if (line.startsWith(MESSAGE_PREFIX)) {
+                player.sendMessage(Text.color(line.substring(MESSAGE_PREFIX.length())));
+            } else if (!line.isBlank()) {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), line.startsWith("/") ? line.substring(1) : line);
+            }
+        }
+    }
+
+    public Database database() {
+        return database;
+    }
+
+    private void onMain(Runnable task) {
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+        } else if (plugin.isEnabled()) {
+            Bukkit.getScheduler().runTask(plugin, task);
+        }
+    }
+
+    /** Whether a reward belongs to this player — used before claiming from a menu slot. */
+    public static boolean owns(PendingReward reward, UUID player) {
+        return reward.player().equals(player);
+    }
+}

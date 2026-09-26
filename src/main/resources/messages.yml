@@ -1,0 +1,84 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  RoyalContests  ·  messages.yml
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Every line players read. & colour codes and &#rrggbb hex work.
+#  Set a message to "" to switch it off. Placeholders are noted beside each one.
+#  Missing keys fall back to the shipped text.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+prefix: "&e&lContest &8» &r"
+
+# Shared words
+none: "&7none"
+crop-separator: "&7, &6"
+bracket-none: "&7No bracket"
+# %minimum%
+bracket-below-minimum: "&7Below %minimum%"
+players-only: "&cOnly players can do that."
+
+# ── Schedule and lifecycle ─────────────────────────────────────────────────────
+# %event% %crops% %time%
+contest-upcoming: "&f%event% &fstarts in &6%time%&f. Crops: &6%crops%"
+contest-countdown: "&f%event% &fstarts in &6%time%&f! Crops: &6%crops%"
+contest-started: "&f%event% &ahas begun! &fFarm &6%crops% &ffor &6%time%&f."
+# %event%
+contest-ended: "&f%event% &fhas ended! Results:"
+contest-cancelled: "&f%event% &cwas cancelled."
+
+# ── Results ────────────────────────────────────────────────────────────────────
+# %crop% %participants%
+results-crop: "&6&l%crop% &7(%participants% players)"
+# %position% %player% %score% %bracket% %crop%
+results-line: "  &e#%position% &f%player% &7- &6%score% &8| %bracket%"
+# To the player: %crop% %score% %position% %participants% %bracket%
+result-personal: "&fYou placed &e#%position%&f of &e%participants%&f in &6%crop%&f with &6%score%&f — %bracket%&f."
+# %crop% %score% %minimum%
+below-minimum: "&cYou farmed &6%score% %crop%&c; you needed &6%minimum%&c to place."
+# %crop% %score%
+personal-best: "&e&lNEW PERSONAL BEST! &f%score% &7%crop%"
+
+# ── While farming ──────────────────────────────────────────────────────────────
+# %crop%
+joined: "&aYou're in! &fFarming &6%crop%&f."
+wrong-crop: "&cYou're competing in &6%crop%&c this contest — other crops don't count."
+# Default text for a requirement with no message of its own. %required%
+requirement-not-met: "&cYou don't meet the requirements to compete."
+
+# ── Boss bar / action bar ──────────────────────────────────────────────────────
+# %event% %crops% %time%
+display-countdown: "&e%event% &fstarts in &6%time% &8| &6%crops%"
+display-watching: "&e%event% &8| &fFarm &6%crops% &fto join &8| &6%time%"
+# %event% %crop% %score% %position% %participants% %bracket% %time%
+display-playing: "&6%crop%&f: &e%score% &8| &f#%position%/%participants% %bracket% &8| &6%time%"
+
+# ── Rewards ────────────────────────────────────────────────────────────────────
+# %bracket% %crop%
+reward-waiting: "&aYou earned %bracket%&a in &6%crop%&a! Claim it with &e/contests&a."
+# %bracket% %event%
+reward-claimed: "&aClaimed %bracket% &afrom %event%&a."
+# %count%
+claimed-all: "&aClaimed &e%count% &areward(s)."
+
+# ── Menus ──────────────────────────────────────────────────────────────────────
+leaderboard-empty: "&7No scores yet."
+leaderboard-nobody: "-"
+
+# ── Admin ──────────────────────────────────────────────────────────────────────
+admin-help: "&e/royalcontests &fstart [event] [now] &7· &fstop &7· &fcancel &7· &fstatus &7· &fcalendar &7· &freload"
+# %event%
+admin-started: "&aStarting %event%&a."
+admin-already-running: "&cA contest is already counting down or running."
+admin-unknown-event: "&cNo event called '%event%' in events.yml."
+admin-stopped: "&aContest ended and paid out."
+admin-cancelled: "&aContest cancelled. No results were recorded."
+admin-nothing-running: "&cNo contest is counting down or running."
+admin-reloaded: "&aReloaded. A running contest keeps its settings until it ends."
+admin-status-manual: "&7No contest scheduled (manual mode, or no events)."
+# %event% %crops% %time%
+admin-status-idle: "&fNext: %event% &fin &6%time% &7(%crops%&7)"
+# %event% %state% %crops% %time% %participants%
+admin-status: "&f%event% &7(%state%) &8| &6%crops% &8| &f%time% left &8| &f%participants% entries"
+# %crop% %position% %player% %score% %bracket%
+admin-status-line: "  &6%crop% &e#%position% &f%player% &7- &6%score% &8| %bracket%"
+# %event% %crops% %in%
+calendar-line: "&f%event% &7in &6%in% &8| &6%crops%"

@@ -1,0 +1,33 @@
+name: Build
+
+# Compile and test on every push and PR, so a broken build is caught here rather than on a server.
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build
+        run: mvn -B clean package
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v7
+        with:
+          name: RoyalContests
+          path: target/RoyalContests.jar
+          if-no-files-found: error

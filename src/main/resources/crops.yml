@@ -1,0 +1,90 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  RoyalContests  ·  crops.yml
+# ═══════════════════════════════════════════════════════════════════════════════
+#  What contests can be about. The key is the crop id used in events.yml,
+#  stats and rewards (%crop%).
+#
+#    display-name : shown to players
+#    icon         : menu item
+#    blocks       : blocks that are this crop when broken
+#    drops        : items that count in `drops` scoring
+#    collection   : id for %collection% in `placeholder` scoring
+#    points       : points per block in `blocks` scoring (default 1)
+#    require-ripe : only fully grown blocks count (default true) — off for cane
+#                   and cactus, whose "age" is a growth timer, not ripeness
+#    natural-only : player-placed blocks never count (default true)
+#    stacked      : blocks of this crop above the broken one fall with it and
+#                   count too (cane, cactus)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+crops:
+  wheat:
+    display-name: "Wheat"
+    icon: wheat
+    blocks: [wheat]
+    drops: [wheat]
+    collection: wheat
+  carrot:
+    display-name: "Carrot"
+    icon: carrot
+    blocks: [carrots]
+    drops: [carrot]
+    collection: carrot
+  potato:
+    display-name: "Potato"
+    icon: potato
+    blocks: [potatoes]
+    drops: [potato]
+    collection: potato
+  beetroot:
+    display-name: "Beetroot"
+    icon: beetroot
+    blocks: [beetroots]
+    drops: [beetroot]
+    collection: beetroot
+  nether_wart:
+    display-name: "Nether Wart"
+    icon: nether_wart
+    blocks: [nether_wart]
+    drops: [nether_wart]
+    collection: netherwart
+  melon:
+    display-name: "Melon"
+    icon: melon_slice
+    blocks: [melon]
+    drops: [melon_slice]
+    collection: melon
+  pumpkin:
+    display-name: "Pumpkin"
+    icon: pumpkin
+    blocks: [pumpkin]
+    drops: [pumpkin]
+    collection: pumpkin
+  sugar_cane:
+    display-name: "Sugar Cane"
+    icon: sugar_cane
+    blocks: [sugar_cane]
+    drops: [sugar_cane]
+    collection: sugar_cane
+    require-ripe: false
+    stacked: true
+  cactus:
+    display-name: "Cactus"
+    icon: cactus
+    blocks: [cactus]
+    drops: [cactus]
+    collection: cactus
+    require-ripe: false
+    stacked: true
+  cocoa:
+    display-name: "Cocoa Beans"
+    icon: cocoa_beans
+    blocks: [cocoa]
+    drops: [cocoa_beans]
+    collection: cocoa
+  mushroom:
+    display-name: "Mushroom"
+    icon: red_mushroom
+    blocks: [red_mushroom, brown_mushroom]
+    drops: [red_mushroom, brown_mushroom]
+    collection: mushroom

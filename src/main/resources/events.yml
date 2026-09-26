@@ -1,47 +1,41 @@
-# ============================================
-#     Jacob's Contest - Event Definitions
-# ============================================
-# Define as many events as you want.
-# Each event specifies which crops, duration, and worlds.
+# ═══════════════════════════════════════════════════════════════════════════════
+#  RoyalContests  ·  events.yml
+# ═══════════════════════════════════════════════════════════════════════════════
+#  The kinds of contest. Per event:
+#    display-name  : shown to players
+#    crops         : crop ids from crops.yml
+#    random-crops  : if set, each contest picks this many of `crops` at random
+#                    (Hypixel: 3 of the full list). Leave out to use them all.
+#    duration      : how long it runs    (default: contest.default-duration)
+#    countdown     : warning before start (default: contest.default-countdown)
+#    worlds        : world patterns       (default: contest.worlds)
+#    weight        : how often `random` selection picks it (default 1)
+#
+#  rotation: the order `sequential` selection runs them in, and the events
+#  `random` picks from. Leave it out to use every event, in file order.
+# ═══════════════════════════════════════════════════════════════════════════════
 
 events:
+  jacobs:
+    display-name: "&e&lJacob's Farming Contest"
+    crops: [wheat, carrot, potato, nether_wart, melon, pumpkin, sugar_cane, cactus, cocoa, mushroom]
+    random-crops: 3
+    duration: 20m
+
   summer_harvest:
     display-name: "&eSummer Harvest"
+    crops: [wheat, carrot, potato]
     duration: 20m
-    countdown: 2m
-    crops:
-      - WHEAT
-      - CARROTS
-      - POTATOES
-    worlds:
-      - SuperiorWorld
 
   nether_harvest:
     display-name: "&cNether Harvest"
+    crops: [nether_wart]
     duration: 20m
-    countdown: 2m
-    crops:
-      - NETHER_WART
-    worlds:
-      - SuperiorWorld
 
   melon_madness:
     display-name: "&aMelon Madness"
+    crops: [melon, pumpkin]
     duration: 20m
-    countdown: 2m
-    crops:
-      - MELON
-      - PUMPKIN
-    worlds:
-      - SuperiorWorld
-
-# ============================================
-#         Event Rotation Order
-# ============================================
-# Events cycle through this list in order.
-# Must match event IDs defined above.
 
 rotation:
-  - summer_harvest
-  - nether_harvest
-  - melon_madness
+  - jacobs
