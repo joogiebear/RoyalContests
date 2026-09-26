@@ -41,17 +41,16 @@
             <version>2.11.6</version>
             <scope>provided</scope>
         </dependency>
+        <!--
+          Provided, not shaded: Paper downloads it at runtime from plugin.yml's `libraries:`, the same
+          list and versions RoyalSkyblock uses. Shading also stopped working at Java 25 — the shade
+          plugin cannot read Java 25 class files.
+        -->
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>5.1.0</version>
-            <exclusions>
-                <!-- Paper already provides SLF4J; shading a second copy only causes warnings. -->
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-            </exclusions>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -90,29 +89,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.4</version>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <relocations>
-                                <!-- Relocated so another plugin's HikariCP can never be the one we load. -->
-                                <relocation>
-                                    <pattern>com.zaxxer.hikari</pattern>
-                                    <shadedPattern>com.mystipixel.royalcontests.libs.hikari</shadedPattern>
-                                </relocation>
-                            </relocations>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
