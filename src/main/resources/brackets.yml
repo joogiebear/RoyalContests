@@ -1,71 +1,80 @@
-# ============================================
-#     Jacob's Contest - Bracket Definitions
-# ============================================
-# threshold = top X% of participants qualify
-# Brackets are checked top-down (strictest first).
+# ═══════════════════════════════════════════════════════════════════════════════
+#  RoyalContests  ·  brackets.yml
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Reward brackets, BEST FIRST. Each crop is ranked on its own, among players who
+#  reached contest.minimum-score. A player gets the first bracket they reach:
 #
-# Reward commands run as console. Available placeholders:
-#   %player%   - player name
-#   %crop%     - crop the player farmed (lowercase, e.g. "wheat")
-#   %score%    - number of points scored
-#   %bracket%  - bracket name (DIAMOND, GOLD, etc.)
-#   %position% - player's rank number
+#    top-percent   : placing in the top X% of their crop …
+#    top-positions : … OR in the top N places. This keeps small contests fair —
+#                    with 5 players nobody is "top 2%", but 1st is still 1st.
+#
+#  commands : console commands run when the reward is CLAIMED
+#  messages : lines sent to the player when they claim it
+#  Placeholders: %player% %uuid% %crop% (id) %crop_name% %score% %position%
+#                %participants% %bracket%
+#  Rewards are saved with their commands filled in, so editing this file never
+#  changes a reward someone has already earned.
+# ═══════════════════════════════════════════════════════════════════════════════
 
-DIAMOND:
-  threshold: 2
-  color: "&b"
-  display-name: "&b&lDIAMOND"
-  commands:
-    - "eco give %player% gold_medal 1"
-    - "eco give %player% silver_medal 1"
-    - "eco give %player% jacobs_ticket 35"
-    - "eco give %player% carnival_ticket 3"
-    - "eco give %player% turbo_crop_%crop%_1 1"
+brackets:
+  diamond:
+    display-name: "&b&lDIAMOND"
+    top-percent: 2
+    top-positions: 1
+    commands:
+      - "eco give %player% gold_medal 1"
+      - "eco give %player% silver_medal 1"
+      - "eco give %player% jacobs_ticket 35"
+      - "eco give %player% carnival_ticket 3"
+      - "eco give %player% turbo_crop_%crop%_1 1"
+    messages: []
 
-PLATINUM:
-  threshold: 5
-  color: "&7"
-  display-name: "&7&lPLATINUM"
-  commands:
-    - "eco give %player% gold_medal 1"
-    - "eco give %player% bronze_medal 1"
-    - "eco give %player% jacobs_ticket 30"
-    - "eco give %player% carnival_ticket 2"
-    - "eco give %player% turbo_crop_%crop%_1 1"
+  platinum:
+    display-name: "&3&lPLATINUM"
+    top-percent: 5
+    top-positions: 2
+    commands:
+      - "eco give %player% gold_medal 1"
+      - "eco give %player% bronze_medal 1"
+      - "eco give %player% jacobs_ticket 30"
+      - "eco give %player% carnival_ticket 2"
+      - "eco give %player% turbo_crop_%crop%_1 1"
+    messages: []
 
-GOLD:
-  threshold: 10
-  color: "&6"
-  display-name: "&6&lGOLD"
-  commands:
-    - "eco give %player% gold_medal 1"
-    - "eco give %player% jacobs_ticket 25"
-    - "eco give %player% carnival_ticket 2"
-    - "eco give %player% turbo_crop_%crop%_1 1"
+  gold:
+    display-name: "&6&lGOLD"
+    top-percent: 10
+    top-positions: 3
+    commands:
+      - "eco give %player% gold_medal 1"
+      - "eco give %player% jacobs_ticket 25"
+      - "eco give %player% carnival_ticket 2"
+      - "eco give %player% turbo_crop_%crop%_1 1"
+    messages: []
 
-SILVER:
-  threshold: 30
-  color: "&f"
-  display-name: "&f&lSILVER"
-  commands:
-    - "eco give %player% silver_medal 1"
-    - "eco give %player% jacobs_ticket 15"
-    - "eco give %player% carnival_ticket 1"
-    - "eco give %player% turbo_crop_%crop%_1 1"
+  silver:
+    display-name: "&f&lSILVER"
+    top-percent: 30
+    commands:
+      - "eco give %player% silver_medal 1"
+      - "eco give %player% jacobs_ticket 15"
+      - "eco give %player% carnival_ticket 1"
+      - "eco give %player% turbo_crop_%crop%_1 1"
+    messages: []
 
-BRONZE:
-  threshold: 60
-  color: "&c"
-  display-name: "&c&lBRONZE"
-  commands:
-    - "eco give %player% bronze_medal 1"
-    - "eco give %player% jacobs_ticket 10"
-    - "eco give %player% carnival_ticket 1"
-    - "eco give %player% turbo_crop_%crop%_1 1"
+  bronze:
+    display-name: "&c&lBRONZE"
+    top-percent: 60
+    commands:
+      - "eco give %player% bronze_medal 1"
+      - "eco give %player% jacobs_ticket 10"
+      - "eco give %player% carnival_ticket 1"
+      - "eco give %player% turbo_crop_%crop%_1 1"
+    messages: []
 
-NONE:
-  threshold: 100
-  color: "&7"
-  display-name: "&7NONE"
-  commands:
-    - "eco give %player% jacobs_ticket 1"
+  participation:
+    display-name: "&7Participation"
+    top-percent: 100
+    commands:
+      - "eco give %player% jacobs_ticket 1"
+    messages: []

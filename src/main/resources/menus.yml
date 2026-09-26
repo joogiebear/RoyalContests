@@ -1,0 +1,160 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  RoyalContests  ·  menus.yml
+# ═══════════════════════════════════════════════════════════════════════════════
+#  Every menu item: material, name, lore, and (where it has a fixed place) slot.
+#  Slots count from 0 at the top left. A lore line that is only a placeholder
+#  disappears when the placeholder is empty.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+filler: black_stained_glass_pane
+# Clock times in menus (Java DateTimeFormatter pattern), server time zone.
+time-format: "HH:mm"
+
+main:
+  title: "&8Farming Contests"
+  rows: 4
+  contest-slot: 11
+  items:
+    # %event% %crops% %time% %your-crop% %your-score% %your-position% %your-bracket%
+    contest-running:
+      material: wheat
+      name: "&a&l%event% &7(running)"
+      lore:
+        - "&7Crops: &6%crops%"
+        - "&7Ends in: &f%time%"
+        - ""
+        - "&7Your crop: &6%your-crop%"
+        - "&7Score: &e%your-score% &8| &7Place: &e#%your-position%"
+        - "&7Bracket: %your-bracket%"
+    # %event% %crops% %time%
+    contest-countdown:
+      material: clock
+      name: "&e&l%event% &7(starting)"
+      lore:
+        - "&7Crops: &6%crops%"
+        - "&7Starts in: &f%time%"
+    # %event% %crops% %time% %at%
+    contest-idle:
+      material: hay_block
+      name: "&eNext: %event%"
+      lore:
+        - "&7Crops: &6%crops%"
+        - "&7Starts in: &f%time% &8(%at%)"
+    contest-manual:
+      material: hay_block
+      name: "&7No contest scheduled"
+      lore:
+        - "&7Contests are started by staff."
+    calendar:
+      slot: 13
+      material: clock
+      name: "&eCalendar"
+      lore:
+        - "&7Upcoming contests and their crops."
+    # %unclaimed%
+    claim:
+      slot: 15
+      material: chest
+      name: "&aRewards"
+      lore:
+        - "&7Unclaimed: &e%unclaimed%"
+        - ""
+        - "&eClick to claim."
+    stats:
+      slot: 21
+      material: book
+      name: "&bYour Stats"
+      lore:
+        - "&7Personal bests and brackets per crop."
+    leaderboards:
+      slot: 23
+      material: gold_ingot
+      name: "&6Leaderboards"
+      lore:
+        - "&7The best score ever, per crop."
+    close:
+      slot: 31
+      material: barrier
+      name: "&cClose"
+
+claim:
+  title: "&8Claim Rewards"
+  rows: 6
+  # One per unclaimed reward (the crop's icon).
+  # %bracket% %event% %crop% %score% %position% %participants% %date%
+  entry:
+    name: "%bracket% &8— &f%crop%"
+    lore:
+      - "&7%event%"
+      - "&7Score: &6%score% &8| &7Place: &e#%position%&7/%participants%"
+      - "&7Earned: &f%date%"
+      - ""
+      - "&eClick to claim."
+  empty:
+    slot: 22
+    material: gray_dye
+    name: "&7Nothing to claim"
+    lore:
+      - "&7Compete in a contest to earn rewards."
+  # %count%
+  claim-all:
+    slot: 50
+    material: emerald_block
+    name: "&a&lClaim All"
+    lore:
+      - "&7Claim all &e%count% &7rewards."
+  back:
+    slot: 49
+    material: arrow
+    name: "&7Back"
+
+stats:
+  title: "&8Your Stats"
+  rows: 3
+  # One per crop. %crop% %best% %total% %contests% %bracket%
+  entry:
+    name: "&6%crop%"
+    lore:
+      - "&7Personal best: &e%best%"
+      - "&7Total farmed in contests: &f%total%"
+      - "&7Contests: &f%contests%"
+      - "&7Best bracket: %bracket%"
+  back:
+    slot: 22
+    material: arrow
+    name: "&7Back"
+
+calendar:
+  title: "&8Contest Calendar"
+  rows: 2
+  # One per upcoming contest (first crop's icon). %event% %crops% %in% %at% %duration%
+  entry:
+    name: "%event%"
+    lore:
+      - "&7Crops: &6%crops%"
+      - "&7Starts in: &f%in% &8(%at%)"
+      - "&7Lasts: &f%duration%"
+  empty:
+    slot: 4
+    material: gray_dye
+    name: "&7Nothing scheduled"
+  back:
+    slot: 13
+    material: arrow
+    name: "&7Back"
+
+leaderboards:
+  title: "&8Leaderboards"
+  rows: 3
+  lines: 5
+  # %position% %player% %score%
+  line: "&e#%position% &f%player% &7- &6%score%"
+  # One per crop. %crop% %top%
+  entry:
+    name: "&6%crop%"
+    lore:
+      - "%top%"
+  back:
+    slot: 22
+    material: arrow
+    name: "&7Back"

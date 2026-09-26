@@ -1,25 +1,24 @@
-name: JacobsContest
+name: RoyalContests
 version: '${project.version}'
-main: com.jacobscontest.JacobsContest
-api-version: '1.21'
-authors: [VoltexaLeader]
-description: Competitive crop farming contests with percentage-based bracket rewards
-softdepend:
-  - PlaceholderAPI
+main: com.mystipixel.royalcontests.RoyalContests
+api-version: '26.2'
+author: Mystipixel
+description: Jacob's-style farming contests for the Royal suite.
+softdepend: [PlaceholderAPI, RoyalSkyblock]
 commands:
-  jacobscontest:
-    description: Manage Jacob's Contest events (admin)
-    usage: /jacobscontest <start|stop|reload|status> [event]
-    permission: jacobscontest.admin
-    aliases: [jc, jacobs]
+  royalcontests:
+    description: Run farming contests (admin).
+    usage: /royalcontests <start|stop|cancel|status|calendar|reload>
+    permission: royalcontests.admin
+    aliases: [jacobscontest, jc, rc]
   contests:
-    description: Open the Jacob's Contest menu
-    usage: /contests
-    permission: jacobscontest.menu
+    description: The contest hub — current contest, rewards, stats, calendar and leaderboards.
+    usage: /contests [claim|stats|calendar|top]
+    permission: royalcontests.menu
 permissions:
-  jacobscontest.admin:
-    description: Access to all Jacob's Contest admin commands
+  royalcontests.admin:
+    description: Start, stop and configure contests.
     default: op
-  jacobscontest.menu:
-    description: Open the contest menu
+  royalcontests.menu:
+    description: Open /contests and claim rewards.
     default: true
