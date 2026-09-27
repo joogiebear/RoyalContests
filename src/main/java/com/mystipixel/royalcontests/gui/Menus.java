@@ -103,7 +103,19 @@ public final class Menus {
                 this::openLeaderboards);
         menu.set(slot(base + "close", 31), Items.build(section(base + "close"), Material.BARRIER),
                 Player::closeInventory);
+        // Optional, only when configured: leave for another plugin's menu, e.g. a server menu hub.
+        String back = file.yaml().getString(base + "back.command", "");
+        if (!back.isBlank()) {
+            menu.set(slot(base + "back", 27), Items.build(section(base + "back"), Material.ARROW),
+                    p -> runCommand(p, back));
+        }
         finish(menu, player);
+    }
+
+    /** Close, then run the command as the player next tick, so it can safely open another menu. */
+    private void runCommand(Player player, String command) {
+        player.closeInventory();
+        Bukkit.getScheduler().runTask(plugin, () -> player.performCommand(command));
     }
 
     private org.bukkit.inventory.ItemStack contestItem(Player player) {

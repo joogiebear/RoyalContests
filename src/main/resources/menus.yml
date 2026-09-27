@@ -76,6 +76,15 @@ main:
       slot: 31
       material: barrier
       name: "&cClose"
+    # Optional button that runs a command as the player, e.g. back to a server menu hub.
+    # Shown only when `command` is set.
+    # back:
+    #   slot: 27
+    #   material: arrow
+    #   name: "&aGo Back"
+    #   lore:
+    #     - "&7To SkyBlock Menu"
+    #   command: "menu"
 
 claim:
   title: "&8Claim Rewards"
