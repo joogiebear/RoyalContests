@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.UUID;
 
@@ -433,11 +434,11 @@ public final class ContestService {
             if (settings.lockIn()) {
                 contest.lock(id, crop.id());
             }
-            if (settings.scoring() == Settings.Scoring.PLACEHOLDER) {
-                entry.setSnapshot(readPlaceholder(player, crop));
-            }
             lang.send(player, "joined", "%crop%", crop.displayName());
             settings.playSound(player, "join");
+        }
+        if (settings.scoring() == Settings.Scoring.PLACEHOLDER && entry.snapshot() == Long.MIN_VALUE) {
+            readPlaceholder(player, crop).ifPresent(entry::reading);
         }
         if (!entry.withinRate(settings.maxBreaksPerSecond(), System.currentTimeMillis())) {
             return null;
@@ -448,7 +449,7 @@ public final class ContestService {
         return entry;
     }
 
-    private long readPlaceholder(Player player, CropType crop) {
+    private OptionalLong readPlaceholder(Player player, CropType crop) {
         String placeholder = settings.scoringPlaceholder().replace("%collection%", crop.collection());
         double value = Papi.number(player, placeholder);
         if (Double.isNaN(value)) {
@@ -456,9 +457,9 @@ public final class ContestService {
                 plugin.getLogger().warning("Scoring placeholder " + placeholder + " did not return a number; "
                         + "check scoring.placeholder and the crop's collection id.");
             }
-            return 0;
+            return OptionalLong.empty();
         }
-        return (long) value;
+        return OptionalLong.of((long) value);
     }
 
     private void pollPlaceholders() {
@@ -473,8 +474,8 @@ public final class ContestService {
             }
             for (Participant entry : target.entries(cropId)) {
                 Player player = Bukkit.getPlayer(entry.player());
-                if (player != null && entry.snapshot() != Long.MIN_VALUE) {
-                    entry.setScore(readPlaceholder(player, crop) - entry.snapshot());
+                if (player != null) {
+                    readPlaceholder(player, crop).ifPresent(entry::reading);
                 }
             }
         }
