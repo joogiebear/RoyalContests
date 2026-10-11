@@ -50,7 +50,8 @@ public final class Items {
                 lore.add(part);
             }
         }
-        ItemStack item = plain(type, Text.fill(section.getString("name", ""), placeholders), lore);
+        String name = section.getString("name");
+        ItemStack item = plain(type, Text.fill(name == null ? "" : name, placeholders), lore);
         int amount = section.getInt("amount", 1);
         item.setAmount(Math.clamp(amount, 1, 64));
         return item;
