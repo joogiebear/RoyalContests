@@ -8,8 +8,7 @@ import org.bukkit.plugin.Plugin;
 /**
  * Every line a player can read, from {@code messages.yml}.
  *
- * <p>Set a message to {@code ""} to switch it off — {@code send} skips empty messages rather than
- * sending a blank line.
+ * <p>Set a message to {@code ""} to switch it off; empty messages are never sent.
  */
 public final class Lang extends YamlFile {
 
@@ -29,7 +28,7 @@ public final class Lang extends YamlFile {
         }
     }
 
-    /** Send without the prefix — for lines of a list or a block of results. */
+    /** Send without the prefix, for lines of a list or a block of results. */
     public void sendPlain(CommandSender to, String key, String... placeholders) {
         String text = raw(key, placeholders);
         if (!text.isEmpty()) {

@@ -36,8 +36,6 @@ public final class Settings extends YamlFile {
         super(plugin, "config.yml", true);
     }
 
-    // ── schedule ───────────────────────────────────────────────────────────────
-
     public ScheduleMode scheduleMode() {
         return parse(ScheduleMode.class, "schedule.mode", ScheduleMode.INTERVAL);
     }
@@ -47,7 +45,7 @@ public final class Settings extends YamlFile {
         return Math.max(60_000L, duration("schedule.interval", 3_600_000L));
     }
 
-    /** Shift of the interval from the top of the clock — {@code 15m} starts contests at :15. */
+    /** Shift of the interval from the top of the clock: {@code 15m} starts contests at :15. */
     public long offsetMillis() {
         return duration("schedule.offset", 0L);
     }
@@ -69,8 +67,6 @@ public final class Settings extends YamlFile {
     public int calendarSize() {
         return Math.clamp(yaml().getInt("schedule.calendar-size", 5), 1, 28);
     }
-
-    // ── contests ───────────────────────────────────────────────────────────────
 
     /** World name patterns contests count in; {@code *} matches anything, so {@code garden_*} is every Garden. */
     public List<String> defaultWorlds() {
@@ -112,8 +108,6 @@ public final class Settings extends YamlFile {
         return Math.max(0, yaml().getInt("contest.broadcast-top", 3));
     }
 
-    // ── scoring ────────────────────────────────────────────────────────────────
-
     public Scoring scoring() {
         Scoring mode = parse(Scoring.class, "scoring.mode", Scoring.BLOCKS);
         return mode == Scoring.PLACEHOLDER && !Papi.available() ? Scoring.BLOCKS : mode;
@@ -128,8 +122,6 @@ public final class Settings extends YamlFile {
     public int maxBreaksPerSecond() {
         return Math.max(0, yaml().getInt("scoring.max-breaks-per-second", 30));
     }
-
-    // ── requirements ───────────────────────────────────────────────────────────
 
     public List<Requirement> requirements() {
         List<Requirement> out = new ArrayList<>();
@@ -156,8 +148,6 @@ public final class Settings extends YamlFile {
         }
         return null;
     }
-
-    // ── display and sound ──────────────────────────────────────────────────────
 
     public Display display() {
         return parse(Display.class, "display.type", Display.BOSS_BAR);
@@ -192,8 +182,6 @@ public final class Settings extends YamlFile {
         player.playSound(at, sound, volume, pitch);
     }
 
-    // ── rewards and storage ────────────────────────────────────────────────────
-
     /** Whether rewards are given straight away to online players instead of waiting in {@code /contests}. */
     public boolean autoClaim() {
         return yaml().getBoolean("rewards.auto-claim", false);
@@ -210,8 +198,6 @@ public final class Settings extends YamlFile {
     public int leaderboardSize() {
         return Math.clamp(yaml().getInt("leaderboards.size", 10), 1, 100);
     }
-
-    // ── helpers ────────────────────────────────────────────────────────────────
 
     private long duration(String path, long fallback) {
         return Durations.parseMillis(yaml().getString(path), fallback);

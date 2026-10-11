@@ -1,10 +1,7 @@
-# ═══════════════════════════════════════════════════════════════════════════════
-#  RoyalContests  ·  menus.yml
-# ═══════════════════════════════════════════════════════════════════════════════
-#  Every menu item: material, name, lore, and (where it has a fixed place) slot.
-#  Slots count from 0 at the top left. A lore line that is only a placeholder
-#  disappears when the placeholder is empty.
-# ═══════════════════════════════════════════════════════════════════════════════
+# RoyalContests menus.yml
+# Every menu item: material, name, lore, and (where it has a fixed place) slot.
+# Slots count from 0 at the top left. A lore line that is only a placeholder
+# disappears when the placeholder is empty.
 
 filler: black_stained_glass_pane
 # Clock times in menus (Java DateTimeFormatter pattern), server time zone.

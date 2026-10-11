@@ -20,9 +20,8 @@ import java.util.logging.Logger;
 /**
  * The contest events and the order they run in, from {@code events.yml}.
  *
- * <p>Which event runs in a scheduled slot — and which crops a random-crop event picks — is a pure
- * function of the slot number. So the calendar can show upcoming contests exactly, and a restart
- * neither repeats nor skips one.
+ * <p>Which event runs in a slot, and which crops a random-crop event picks, is a pure function of the
+ * slot number, so the calendar is exact and a restart neither repeats nor skips one.
  */
 public final class EventRegistry {
 

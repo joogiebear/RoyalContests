@@ -13,14 +13,10 @@ import java.nio.charset.StandardCharsets;
 /**
  * One editable YAML file in the plugin folder, backed by the copy in the jar.
  *
- * <p>The bundled copy is written out on first run so there is something to edit. For files with a fixed
- * shape (config, messages, menus) it is also set as the loaded file's <em>defaults</em>, so an update that
- * adds a setting never leaves a blank: a key missing from disk reads as the shipped value. Files that are
- * lists of things (crops, events, brackets) are read without defaults — otherwise an entry the admin
- * deleted would keep coming back from the shipped example.
+ * <p>Fixed-shape files (config, messages, menus) use the shipped copy as defaults, so a new setting never
+ * reads blank. List files (crops, events, brackets) don't, or an entry the admin deleted would come back.
  *
- * <p>A file that fails to parse is never overwritten. The error is logged and the shipped copy is used
- * until it is fixed, so a stray tab costs a warning, not the admin's edits.
+ * <p>A file that fails to parse is never overwritten; the shipped copy is used until it is fixed.
  */
 public class YamlFile {
 

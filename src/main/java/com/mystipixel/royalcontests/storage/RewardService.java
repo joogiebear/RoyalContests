@@ -19,12 +19,10 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
- * Results, stats and rewards: what happens to a placing once a contest is over.
+ * Results, stats and rewards for a finished contest.
  *
- * <p>A reward is saved with its actions spelled out — the bracket's commands with the player's
- * placeholders already filled — so editing {@code brackets.yml} later never changes a reward someone has
- * already earned. It waits in {@code /contests} until claimed, unless {@code rewards.auto-claim} is on
- * and the player is online.
+ * <p>A reward is saved with its placeholders already filled in, so editing {@code brackets.yml} later
+ * never changes a reward someone has already earned.
  */
 public final class RewardService {
 
@@ -36,7 +34,7 @@ public final class RewardService {
     private final Lang lang;
     private final BracketTable brackets;
     private final StatsCache cache;
-    /** Rewards being claimed right now, so a double-click does not even reach the database twice. */
+    // rewards being claimed right now, so a double-click doesn't reach the database twice
     private final Set<Integer> claiming = new HashSet<>();
 
     public RewardService(Plugin plugin, Database database, Settings settings, Lang lang,
@@ -50,7 +48,7 @@ public final class RewardService {
     }
 
     /**
-     * Record one placing: the result row, the player's stats, and — if they reached a bracket — a reward.
+     * Record one placing: the result row, the player's stats, and a reward if they reached a bracket.
      *
      * @param shuttingDown true when the contest is ending because the server is stopping; rewards are
      *                     then always left to claim, never auto-claimed into a player who is leaving
@@ -84,7 +82,6 @@ public final class RewardService {
                 r.personalBest(), r.bracket(), r.bracketDisplay(), r.position(), r.total(), r.actions(), r.timestamp());
     }
 
-    /** A bracket's commands and messages, with this result's placeholders filled in. */
     private static List<String> actions(Bracket bracket, Result result, String cropName) {
         String[] placeholders = {"%player%", result.playerName(), "%uuid%", result.player().toString(),
                 "%crop%", result.crop(), "%crop_name%", cropName, "%score%", String.valueOf(result.score()),
@@ -102,8 +99,8 @@ public final class RewardService {
     }
 
     /**
-     * Claim one reward. The database flips it from unclaimed to claimed atomically, and only then are
-     * its actions run — so however fast someone clicks, a reward pays out once.
+     * Claim one reward. The database flips it to claimed atomically before its actions run, so a reward
+     * pays out once however fast someone clicks.
      */
     public void claim(Player player, PendingReward reward, Consumer<Boolean> done) {
         if (!claiming.add(reward.id())) {
@@ -124,7 +121,6 @@ public final class RewardService {
         }));
     }
 
-    /** Claim everything waiting for a player. */
     public void claimAll(Player player, Consumer<Integer> done) {
         database.pending(player.getUniqueId()).thenAccept(rewards -> onMain(() -> {
             if (rewards.isEmpty()) {
@@ -169,7 +165,7 @@ public final class RewardService {
         }
     }
 
-    /** Whether a reward belongs to this player — used before claiming from a menu slot. */
+    /** Whether a reward belongs to this player, checked before claiming from a menu slot. */
     public static boolean owns(PendingReward reward, UUID player) {
         return reward.player().equals(player);
     }

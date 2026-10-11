@@ -16,7 +16,7 @@ class RankingTest {
 
     @Test
     void positionsRescueSmallContests() {
-        // Five players: 1st is 20%, which is no percentage bracket above bronze — but it is position 1.
+        // Five players: 1st is 20%, which is no percentage bracket above bronze, but it is position 1.
         var placed = Ranking.rank(List.of(500L, 400L, 300L, 200L, 100L), s -> s, 0, LADDER);
         assertEquals(DIAMOND, placed.get(0).bracket());
         assertEquals(GOLD, placed.get(1).bracket());

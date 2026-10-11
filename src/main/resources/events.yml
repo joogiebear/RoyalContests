@@ -1,7 +1,5 @@
-# ═══════════════════════════════════════════════════════════════════════════════
-#  RoyalContests  ·  events.yml
-# ═══════════════════════════════════════════════════════════════════════════════
-#  The kinds of contest. Per event:
+# RoyalContests events.yml
+# The kinds of contest. Per event:
 #    display-name  : shown to players
 #    crops         : crop ids from crops.yml
 #    random-crops  : if set, each contest picks this many of `crops` at random
@@ -11,9 +9,8 @@
 #    worlds        : world patterns       (default: contest.worlds)
 #    weight        : how often `random` selection picks it (default 1)
 #
-#  rotation: the order `sequential` selection runs them in, and the events
-#  `random` picks from. Leave it out to use every event, in file order.
-# ═══════════════════════════════════════════════════════════════════════════════
+# rotation: the order `sequential` selection runs them in, and the events
+# `random` picks from. Leave it out to use every event, in file order.
 
 events:
   jacobs:

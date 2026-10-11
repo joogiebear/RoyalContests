@@ -59,10 +59,7 @@ public final class Participant {
         }
     }
 
-    /**
-     * Count a break against the per-second limit. Returns false once the player is past it this second —
-     * that break is not scored.
-     */
+    /** Count a break against the per-second limit; false (not scored) once the player is past it this second. */
     public boolean withinRate(int maxPerSecond, long now) {
         if (maxPerSecond <= 0) {
             return true;

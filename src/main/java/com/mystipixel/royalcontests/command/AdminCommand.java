@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * {@code /royalcontests} (also {@code /jacobscontest}, {@code /jc}) — running contests by hand.
+ * {@code /royalcontests} (also {@code /jacobscontest}, {@code /jc}): running contests by hand.
  *
  * <pre>
  *   start [event] [now]   start a contest; "now" skips the countdown

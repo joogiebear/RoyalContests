@@ -3,9 +3,9 @@ package com.mystipixel.royalcontests.contest;
 /**
  * Clock arithmetic for the interval schedule. Pure, so it can be tested without a server.
  *
- * <p>Contests start at {@code offset + k * interval} milliseconds since the epoch, for whole k — so
- * with a 1h interval and a 15m offset, every hour at :15, the same on every server and across restarts.
- * {@code k} is the contest's <em>slot</em>, and it is what picks the event and its crops.
+ * <p>Contests start at {@code offset + k * interval} ms since the epoch, for whole k: a 1h interval with
+ * a 15m offset is every hour at :15, the same across restarts. {@code k} is the slot, which picks the
+ * event and its crops.
  */
 public final class Schedule {
 

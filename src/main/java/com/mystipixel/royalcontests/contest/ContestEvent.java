@@ -7,7 +7,7 @@ import java.util.List;
  *
  * @param crops       crop ids from crops.yml
  * @param randomCrops if above zero, each contest of this event picks this many of {@code crops} at
- *                    random — Hypixel's three-of-ten
+ *                    random (Hypixel's three-of-ten)
  * @param worlds      world patterns this event counts in; empty means {@code contest.worlds}
  * @param weight      how often {@code random} selection picks this event, relative to the others
  */

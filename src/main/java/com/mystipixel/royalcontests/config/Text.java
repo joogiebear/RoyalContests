@@ -22,7 +22,7 @@ public final class Text {
         return LEGACY.deserialize(input == null ? "" : input);
     }
 
-    /** Coloured, and not italic — for item names and lore, which render italic by default. */
+    /** Coloured and not italic, for item names and lore (which render italic by default). */
     public static Component item(String input) {
         return color(input).decoration(TextDecoration.ITALIC, false);
     }

@@ -15,10 +15,9 @@ import java.util.UUID;
 import java.util.function.Function;
 
 /**
- * What players see while a contest counts down and runs: a boss bar or an action bar, one per player.
+ * What players see while a contest counts down and runs: a boss bar or an action bar.
  *
- * <p>One bar <em>per player</em>. The old plugin shared a single bar and renamed it once per player in a
- * loop, so everyone ended up reading the last player's score.
+ * <p>One bar per player: a single shared bar renamed in a loop shows everyone the last player's score.
  */
 public final class ContestDisplay {
 
@@ -65,7 +64,6 @@ public final class ContestDisplay {
             bar.overlay(overlay());
             player.showBossBar(bar);
         }
-        // Players who left keep no bar.
         Iterator<Map.Entry<UUID, BossBar>> it = bars.entrySet().iterator();
         while (it.hasNext()) {
             if (Bukkit.getPlayer(it.next().getKey()) == null) {

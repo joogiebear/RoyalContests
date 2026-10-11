@@ -30,19 +30,13 @@ import java.util.UUID;
 /**
  * Runs contests: when they start, what they count, who is winning, and what everyone gets.
  *
- * <p>One timer, once a second, drives everything — the schedule, the countdown, the live display and
- * the end — so there is exactly one place where a contest changes state, and nothing to leak or stack
- * when the config is reloaded. The old plugin had a separate task per phase, and reloading started a
- * new contest ten seconds later whatever was already scheduled.
- *
- * <h2>Scheduling</h2>
+ * <p>One timer, once a second, drives every state change, so a reload has nothing to leak or stack.
  *
  * <ul>
- *   <li><b>interval</b> — on the clock, every {@code schedule.interval} (Hypixel's model). Which event
- *       and crops each slot gets is fixed by the slot number, so the calendar is exact and a restart
- *       changes nothing.</li>
- *   <li><b>break</b> — the next countdown starts {@code schedule.break} after the last contest ended.</li>
- *   <li><b>manual</b> — only {@code /royalcontests start}.</li>
+ *   <li><b>interval</b>: every {@code schedule.interval} on the clock. A slot's event and crops are fixed
+ *       by its number, so a restart changes nothing.</li>
+ *   <li><b>break</b>: the next countdown starts {@code schedule.break} after the last contest ended.</li>
+ *   <li><b>manual</b>: only {@code /royalcontests start}.</li>
  * </ul>
  */
 public final class ContestService {
@@ -74,7 +68,7 @@ public final class ContestService {
     private final Set<String> announced = new HashSet<>();
     private final Map<UUID, Long> lastNotice = new HashMap<>();
     private final Set<String> warnedPlaceholders = new HashSet<>();
-    /** Live placings, rebuilt every second while a contest runs. */
+    // live placings, rebuilt every second while a contest runs
     private Map<Participant, Ranking.Placed<Participant>> live = new IdentityHashMap<>();
 
     public ContestService(Plugin plugin, Settings settings, Lang lang, CropRegistry crops, EventRegistry events,
@@ -89,8 +83,6 @@ public final class ContestService {
         this.display = display;
         this.stateFile = new File(plugin.getDataFolder(), "state.yml");
     }
-
-    // ── lifecycle ──────────────────────────────────────────────────────────────
 
     public void start() {
         YamlConfiguration saved = YamlConfiguration.loadConfiguration(stateFile);
@@ -191,8 +183,6 @@ public final class ContestService {
                 (float) left / contest.event().durationMillis());
     }
 
-    // ── planning ───────────────────────────────────────────────────────────────
-
     /** The next contest the schedule will run, or null in manual mode or with no events. */
     public Planned next(long now) {
         if (events.isEmpty()) {
@@ -244,8 +234,6 @@ public final class ContestService {
         }
         return out;
     }
-
-    // ── starting and ending ────────────────────────────────────────────────────
 
     private void begin(Planned planned) {
         contest = new Contest(planned.event(), planned.crops(), events.worldsFor(planned.event()),
@@ -399,12 +387,9 @@ public final class ContestService {
         }
     }
 
-    // ── scoring ────────────────────────────────────────────────────────────────
-
     /**
-     * Count a harvest. The listener has already checked the world, the crop, ripeness and whether the
-     * block was placed; this decides whether the player is in the contest for that crop, and adds the
-     * points.
+     * Count a harvest. The listener has already checked world, crop, ripeness and placed blocks; this
+     * checks the player can enter the contest for that crop and adds the points.
      *
      * @return the player's entry if the harvest counted, or null
      */
@@ -492,8 +477,6 @@ public final class ContestService {
         live = ranks;
     }
 
-    // ── display text ───────────────────────────────────────────────────────────
-
     private String countdownLine(Player player, long left) {
         if (settings.displayOnlyInContestWorlds() && !contest.counts(player.getWorld().getName())) {
             return null;
@@ -528,7 +511,6 @@ public final class ContestService {
         return bracket == null ? lang.raw("bracket-none") : bracket.displayName();
     }
 
-    /** Crop ids as a list of display names. */
     public String cropNames(List<String> ids) {
         List<String> names = new ArrayList<>(ids.size());
         for (String id : ids) {
@@ -544,7 +526,7 @@ public final class ContestService {
         }
     }
 
-    /** Refusals are rate-limited: one per few seconds, not one per crop broken. */
+    // refusals are rate-limited: one per few seconds, not one per crop broken
     private boolean noticeDue(Player player) {
         long now = System.currentTimeMillis();
         Long last = lastNotice.get(player.getUniqueId());
@@ -554,8 +536,6 @@ public final class ContestService {
         lastNotice.put(player.getUniqueId(), now);
         return true;
     }
-
-    // ── queries ────────────────────────────────────────────────────────────────
 
     public State state() {
         return state;

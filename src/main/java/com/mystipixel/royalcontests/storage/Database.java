@@ -28,16 +28,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * SQLite or MySQL, through one connection pool and one worker thread.
+ * SQLite or MySQL, through one connection pool and one worker thread, never on the server thread.
  *
- * <p>Every query runs off the server thread. The old plugin ran them inline, so a slow MySQL server
- * stalled the game every time a contest ended or someone opened the claim menu. One worker rather than
- * a pool of them: SQLite allows one writer anyway, and a single queue means a player's claim can never
- * overtake the write that created their reward.
- *
- * <p>The {@code player_stats} and {@code pending_rewards} tables are the same ones JacobsContest used,
- * so an existing database carries straight over. {@code contest_results} is new: every placing of every
- * contest, for history and leaderboards.
+ * <p>One worker because SQLite allows one writer anyway, and a single queue means a claim can never
+ * overtake the write that created its reward. {@code player_stats} and {@code pending_rewards} match
+ * JacobsContest's tables, so an existing database carries over.
  */
 public final class Database {
 
@@ -116,12 +111,11 @@ public final class Database {
         }
     }
 
-    /** MySQL has no CREATE INDEX IF NOT EXISTS; an index that exists already is fine. */
+    // MySQL has no CREATE INDEX IF NOT EXISTS; an index that exists already is fine
     private static void createIndexQuietly(Statement s, String sql) {
         try {
             s.executeUpdate(sql);
         } catch (SQLException exists) {
-            // already there
         }
     }
 
@@ -155,19 +149,13 @@ public final class Database {
         }, worker);
     }
 
-    // ── results and stats ──────────────────────────────────────────────────────
-
     /** What {@link #record} did: whether it was a personal best, and the reward's id if one was saved. */
     public record Recorded(boolean newBest, int rewardId) {
     }
 
     /**
-     * Record a placing, fold it into the player's stats for that crop, and save its reward if it has one
-     * — all as one queued task.
-     *
-     * <p>One task rather than a chain of them because a contest can end during shutdown: a second task
-     * queued after the first finished would arrive after {@link #close} stopped taking work, and the
-     * reward would be lost.
+     * Record a placing, fold it into the player's stats and save its reward if it has one, as one queued
+     * task: during shutdown a follow-up task would arrive after {@link #close} and the reward would be lost.
      *
      * @param reward      the reward to save, or null
      * @param bracketRank orders bracket ids, lower being better, to keep each player's best
@@ -274,8 +262,6 @@ public final class Database {
         });
     }
 
-    // ── rewards ────────────────────────────────────────────────────────────────
-
     private static int insertReward(Connection c, PendingReward reward) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement("INSERT INTO pending_rewards (uuid, player_name, "
                 + "event_name, crop, score, personal_best, bracket, bracket_display, position, "
@@ -336,12 +322,8 @@ public final class Database {
     }
 
     /**
-     * Mark a reward claimed, if it still is unclaimed and belongs to this player. Returns true only for
-     * the one call that actually flipped it.
-     *
-     * <p>This is the whole defence against double-claiming: the old plugin checked, ran the commands,
-     * then marked the reward — so two clicks in the same tick both passed the check. Here the database
-     * decides, atomically, and only the winner's commands run.
+     * Mark a reward claimed, if it is still unclaimed and belongs to this player. Returns true only for
+     * the one call that flipped it; this atomic update is the whole defence against double-claiming.
      */
     public CompletableFuture<Boolean> claim(int id, UUID player) {
         return submit("claiming a reward", c -> {

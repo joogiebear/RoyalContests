@@ -3,8 +3,7 @@ package com.mystipixel.royalcontests.config;
 import java.util.Locale;
 
 /**
- * Durations as admins write them: {@code 20m}, {@code 1h30m}, {@code 45s}, or {@code 0} for none — the
- * same shorthand the rest of the Royal suite uses.
+ * Durations as admins write them: {@code 20m}, {@code 1h30m}, {@code 45s}, or {@code 0} for none.
  */
 public final class Durations {
 
@@ -55,7 +54,7 @@ public final class Durations {
         return any ? total : fallback;
     }
 
-    /** Format for players: {@code 1h 5m}, {@code 30s} — never more than two units. */
+    /** Format for players: {@code 1h 5m}, {@code 30s}; never more than two units. */
     public static String format(long millis) {
         long seconds = Math.max(0, (millis + 999) / 1000);
         long[][] units = {{seconds / 86_400, 'd'}, {seconds % 86_400 / 3_600, 'h'},
