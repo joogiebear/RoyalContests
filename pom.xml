@@ -6,7 +6,7 @@
 
     <groupId>com.mystipixel</groupId>
     <artifactId>royalcontests</artifactId>
-    <version>2026.41.0</version>
+    <version>2026.41.1</version>
     <packaging>jar</packaging>
     <name>RoyalContests</name>
     <description>Crop farming contests with per-crop percentage brackets and claimable rewards.</description>

@@ -1,3 +1,8 @@
+## 2026.41.1 - 2026-10-11
+
+### Features
+- leave RoyalRegen zone harvests out of contest scores (`0699a65`)
+
 ## 2026.41.0 - 2026-10-10
 
 ### Features
