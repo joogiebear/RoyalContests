@@ -39,7 +39,8 @@ an admin starts one.
 
 **What counts.** A block counts only if a contest is running in a contest world, the block is one of
 that contest's crops, it is fully grown (for crops with an age), no player placed it (for crops
-marked `natural-only`), and the player isn't in creative. Sugar cane and cactus count the whole
+marked `natural-only`), the player isn't in creative, and it isn't inside a RoyalRegen zone (set
+`scoring.count-regen-zones: true` to count those). Sugar cane and cactus count the whole
 column that falls. Placed blocks are tracked per chunk and follow pistons.
 
 **Scoring modes.** `blocks`: points per block. `drops`: crop items actually dropped, so Fortune

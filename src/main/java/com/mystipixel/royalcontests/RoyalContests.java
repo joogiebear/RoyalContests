@@ -14,6 +14,7 @@ import com.mystipixel.royalcontests.gui.Menu;
 import com.mystipixel.royalcontests.gui.Menus;
 import com.mystipixel.royalcontests.hook.ContestExpansion;
 import com.mystipixel.royalcontests.hook.Papi;
+import com.mystipixel.royalcontests.hook.RegenZones;
 import com.mystipixel.royalcontests.scoring.HarvestListener;
 import com.mystipixel.royalcontests.storage.Database;
 import com.mystipixel.royalcontests.storage.RewardService;
@@ -45,6 +46,7 @@ public final class RoyalContests extends JavaPlugin {
     private StatsCache cache;
     private ContestService contests;
     private HarvestListener harvests;
+    private RegenZones regenZones;
     private Menus menus;
 
     @Override
@@ -71,7 +73,13 @@ public final class RoyalContests extends JavaPlugin {
         ContestDisplay display = new ContestDisplay(settings, lang);
         this.contests = new ContestService(this, settings, lang, crops, events, brackets, rewards, display);
         PlacedBlocks placed = new PlacedBlocks(this, crops);
-        this.harvests = new HarvestListener(settings, crops, placed, contests);
+        this.regenZones = new RegenZones(getLogger());
+        regenZones.hook(getServer().getPluginManager());
+        if (regenZones.active()) {
+            getLogger().info("Hooked RoyalRegen: harvests in its zones "
+                    + (settings.countRegenZones() ? "count" : "don't count") + " (scoring.count-regen-zones).");
+        }
+        this.harvests = new HarvestListener(settings, crops, placed, contests, regenZones);
         this.menus = new Menus(this, settings, lang, contests, crops, brackets, rewards, cache);
 
         PluginManager plugins = getServer().getPluginManager();
@@ -116,6 +124,7 @@ public final class RoyalContests extends JavaPlugin {
         brackets.reload();
         menus.reload();
         cache.restartRefresh();
+        regenZones.hook(getServer().getPluginManager());
     }
 
     @Override

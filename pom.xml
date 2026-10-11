@@ -90,6 +90,17 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.4</version>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.1</version>
+                <configuration>
+                    <!-- compile-time stand-ins for RoyalRegen's classes; the real ones come from RoyalRegen -->
+                    <excludes>
+                        <exclude>com/mystipixel/royalregen/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

@@ -123,6 +123,11 @@ public final class Settings extends YamlFile {
         return Math.max(0, yaml().getInt("scoring.max-breaks-per-second", 30));
     }
 
+    /** Whether harvests inside RoyalRegen zones count. Off by default: those crops regrow on a timer. */
+    public boolean countRegenZones() {
+        return yaml().getBoolean("scoring.count-regen-zones", false);
+    }
+
     public List<Requirement> requirements() {
         List<Requirement> out = new ArrayList<>();
         for (Map<?, ?> raw : yaml().getMapList("requirements")) {
