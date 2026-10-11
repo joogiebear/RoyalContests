@@ -62,7 +62,8 @@ public final class Menus {
     }
 
     private ConfigurationSection section(String path) {
-        return file.yaml().getConfigurationSection(path);
+        ConfigurationSection section = file.yaml().getConfigurationSection(path);
+        return section != null ? section : file.yaml().getConfigurationSection("missing-item");
     }
 
     private Menu menu(String path, int fallbackRows) {

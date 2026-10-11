@@ -45,6 +45,9 @@ class BundledTextTest {
         }
         assertEquals(5, found, "menus opened by Menus");
         assertTrue(menus.isString("leaderboards.line"), "menus.yml ships leaderboards.line");
+        assertEquals("&c(missing menu item)", menus.getString("missing-item.name"));
+        assertTrue(!menus.contains("missing-item.material") && !menus.contains("missing-item.lore"),
+                "missing-item keeps the menu's own material and has no lore, as the hard-coded item did");
         assertTrue(load("messages.yml").isString("prefix"), "messages.yml ships prefix");
     }
 

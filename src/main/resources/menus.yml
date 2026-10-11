@@ -6,6 +6,9 @@
 filler: black_stained_glass_pane
 # Clock times in menus (Java DateTimeFormatter pattern), server time zone.
 time-format: "HH:mm"
+# Shown in place of a menu item whose section is missing from this file.
+missing-item:
+  name: "&c(missing menu item)"
 
 main:
   title: "&8Farming Contests"
