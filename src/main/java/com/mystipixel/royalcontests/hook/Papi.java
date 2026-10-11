@@ -4,6 +4,8 @@ import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.regex.Pattern;
+
 /**
  * PlaceholderAPI, when installed.
  *
@@ -12,6 +14,8 @@ import org.bukkit.entity.Player;
  * requirements reading as unmet and placeholder scoring unavailable.
  */
 public final class Papi {
+
+    private static final Pattern UNRESOLVED = Pattern.compile("%[^%\\s]+%");
 
     private Papi() {
     }
@@ -33,12 +37,19 @@ public final class Papi {
     }
 
     /**
-     * A placeholder read as a number — the digits in whatever it returns, so {@code "1,250"} and
+     * A placeholder read as a number: the digits in whatever it returns, so {@code "1,250"} and
      * {@code "Level 12"} both read sensibly. {@code NaN} if nothing numeric came back.
      */
     public static double number(Player player, String placeholder) {
-        String value = apply(player, placeholder);
-        if (value == null || value.equals(placeholder)) {
+        return readNumber(placeholder, apply(player, placeholder));
+    }
+
+    /**
+     * The number in a resolved placeholder. {@code NaN} if PlaceholderAPI left a {@code %...%} token in
+     * it, returned nothing, or returned no digits.
+     */
+    public static double readNumber(String placeholder, String value) {
+        if (value == null || value.isBlank() || value.equals(placeholder) || UNRESOLVED.matcher(value).find()) {
             return Double.NaN;
         }
         return parseNumber(value);

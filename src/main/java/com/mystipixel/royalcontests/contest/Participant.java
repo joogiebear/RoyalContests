@@ -45,13 +45,18 @@ public final class Participant {
         this.score = Math.max(0, score);
     }
 
-    /** The placeholder value at lock-in, for placeholder scoring; {@code Long.MIN_VALUE} if not taken. */
+    /** The first valid placeholder reading, for placeholder scoring; {@code Long.MIN_VALUE} if not taken. */
     public long snapshot() {
         return snapshot;
     }
 
-    public void setSnapshot(long snapshot) {
-        this.snapshot = snapshot;
+    /** Apply a valid placeholder reading: the first one becomes the baseline, later ones set the score. */
+    public void reading(long value) {
+        if (snapshot == Long.MIN_VALUE) {
+            snapshot = value;
+        } else {
+            setScore(value - snapshot);
+        }
     }
 
     /**
