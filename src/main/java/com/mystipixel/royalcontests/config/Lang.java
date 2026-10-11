@@ -16,15 +16,16 @@ public final class Lang extends YamlFile {
         super(plugin, "messages.yml", true);
     }
 
-    /** A message with placeholders filled; the key itself if it is missing. */
+    /** A message with placeholders filled; the key itself if neither the file nor the jar has it. */
     public String raw(String key, String... placeholders) {
-        return Text.fill(yaml().getString(key, key), placeholders);
+        String text = yaml().getString(key);
+        return Text.fill(text == null ? key : text, placeholders);
     }
 
     public void send(CommandSender to, String key, String... placeholders) {
         String text = raw(key, placeholders);
         if (!text.isEmpty()) {
-            to.sendMessage(Text.color(yaml().getString("prefix", "") + text));
+            to.sendMessage(Text.color(prefix() + text));
         }
     }
 
@@ -41,11 +42,16 @@ public final class Lang extends YamlFile {
         if (text.isEmpty()) {
             return;
         }
-        var line = Text.color(yaml().getString("prefix", "") + text);
+        var line = Text.color(prefix() + text);
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.sendMessage(line);
         }
         Bukkit.getConsoleSender().sendMessage(line);
+    }
+
+    private String prefix() {
+        String prefix = yaml().getString("prefix");
+        return prefix == null ? "" : prefix;
     }
 
     public void broadcastPlain(String key, String... placeholders) {

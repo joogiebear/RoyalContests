@@ -67,7 +67,7 @@ public final class Menus {
 
     private Menu menu(String path, int fallbackRows) {
         return new Menu(file.yaml().getInt(path + ".rows", fallbackRows),
-                file.yaml().getString(path + ".title", "&8Contests"));
+                file.yaml().getString(path + ".title"));
     }
 
     private void finish(Menu menu, Player player) {
@@ -228,7 +228,7 @@ public final class Menus {
 
     public void openLeaderboards(Player player) {
         Menu menu = menu("leaderboards", 4);
-        String lineFormat = file.yaml().getString("leaderboards.line", "&e#%position% &f%player% &7- &6%score%");
+        String lineFormat = file.yaml().getString("leaderboards.line");
         int shown = file.yaml().getInt("leaderboards.lines", 5);
         int slot = 0;
         for (CropType crop : crops.all()) {
