@@ -31,7 +31,7 @@ public final class Items {
     public static ItemStack build(ConfigurationSection section, Material material, Material fallback,
                                   String... placeholders) {
         if (section == null) {
-            return plain(material != null ? material : fallback, "&c(missing menu item)", List.of());
+            return plain(material != null ? material : fallback, "", List.of());
         }
         Material type = material;
         if (type == null) {
