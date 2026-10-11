@@ -7,6 +7,7 @@ import com.mystipixel.royalcontests.contest.Participant;
 import com.mystipixel.royalcontests.crop.CropRegistry;
 import com.mystipixel.royalcontests.crop.CropType;
 import com.mystipixel.royalcontests.crop.PlacedBlocks;
+import com.mystipixel.royalcontests.hook.RegenZones;
 import org.bukkit.GameMode;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -27,7 +28,8 @@ import java.util.Map;
 /**
  * Decides whether a broken block counts, for every scoring mode. It counts only if a contest is running
  * in this world for this crop, the crop is fully grown (if it has an age), no player placed it (for
- * {@code natural-only} crops), and the player is in survival or adventure.
+ * {@code natural-only} crops), the player is in survival or adventure, and it isn't in a RoyalRegen zone
+ * (unless {@code scoring.count-regen-zones} is on).
  *
  * <p>Points: {@code blocks} per block, {@code drops} per crop item dropped (so Fortune counts),
  * {@code placeholder} from a collection plugin.
@@ -42,13 +44,16 @@ public final class HarvestListener implements Listener {
     private final CropRegistry crops;
     private final PlacedBlocks placed;
     private final ContestService contests;
+    private final RegenZones regenZones;
     private final Map<Long, PendingDrops> pending = new HashMap<>();
 
-    public HarvestListener(Settings settings, CropRegistry crops, PlacedBlocks placed, ContestService contests) {
+    public HarvestListener(Settings settings, CropRegistry crops, PlacedBlocks placed, ContestService contests,
+                           RegenZones regenZones) {
         this.settings = settings;
         this.crops = crops;
         this.placed = placed;
         this.contests = contests;
+        this.regenZones = regenZones;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -76,6 +81,9 @@ public final class HarvestListener implements Listener {
                 && ageable.getAge() < ageable.getMaximumAge()) {
             return;
         }
+        if (inUncountedRegenZone(block)) {
+            return;
+        }
         int stacked = crop.stacked() ? countStackedAbove(block, crop) : 0;
         int blocks = 1 + stacked;
 
@@ -89,6 +97,11 @@ public final class HarvestListener implements Listener {
                 }
             }
         }
+    }
+
+    // last of the checks, so the zone lookup runs once per break that would otherwise count
+    boolean inUncountedRegenZone(Block block) {
+        return !settings.countRegenZones() && regenZones.contains(block);
     }
 
     // sugar cane and cactus break as a column, and only the bottom block fires a break event

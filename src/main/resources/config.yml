@@ -56,6 +56,9 @@ scoring:
   placeholder: "%aurora_collections_farming_%collection%_count_raw%"
   # Breaks past this many per second don't count (macro / insta-break guard). 0 = off.
   max-breaks-per-second: 30
+  # Whether crops harvested inside RoyalRegen zones count. They regrow on a timer, so by
+  # default they don't. Has no effect without RoyalRegen.
+  count-regen-zones: false
 
 # Who may compete: PlaceholderAPI checks, all of which must pass when a player first scores.
 #   - placeholder: "%ecoskills_farming%"

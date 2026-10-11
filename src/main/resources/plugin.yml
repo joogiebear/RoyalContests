@@ -4,7 +4,7 @@ main: com.mystipixel.royalcontests.RoyalContests
 api-version: '26.2'
 author: Mystipixel
 description: Jacob's-style farming contests for the Royal suite.
-softdepend: [PlaceholderAPI, RoyalSkyblock]
+softdepend: [PlaceholderAPI, RoyalSkyblock, RoyalRegen]
 # Downloaded at runtime by Paper's library loader; the same list and versions RoyalSkyblock uses.
 libraries:
   - org.xerial:sqlite-jdbc:3.46.1.3
