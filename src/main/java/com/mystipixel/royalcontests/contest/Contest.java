@@ -14,8 +14,7 @@ import java.util.UUID;
  * A contest that is counting down or running: the event, the crops chosen for it, when it starts and
  * ends, and everyone's scores.
  *
- * <p>It is a snapshot. A reload that edits the event does not reach into a contest already under way —
- * players are held to the rules the contest was announced with.
+ * <p>It is a snapshot: a reload that edits the event does not reach into a contest already under way.
  */
 public final class Contest {
 
@@ -25,9 +24,9 @@ public final class Contest {
     private final long startAt;
     private final long endAt;
     private final long slot;
-    /** crop id → player → entry. */
+    // crop id -> player -> entry
     private final Map<String, Map<UUID, Participant>> entries = new LinkedHashMap<>();
-    /** The crop each player is locked to, when lock-in is on. */
+    // the crop each player is locked to, when lock-in is on
     private final Map<UUID, String> locked = new HashMap<>();
 
     public Contest(ContestEvent event, List<String> crops, List<String> worlds, long startAt, long slot) {
@@ -92,7 +91,6 @@ public final class Contest {
         return entries.get(crop).computeIfAbsent(player, id -> new Participant(id, name, crop));
     }
 
-    /** Everyone in one crop. */
     public Collection<Participant> entries(String crop) {
         Map<UUID, Participant> byPlayer = entries.get(crop);
         return byPlayer == null ? List.of() : byPlayer.values();
@@ -110,7 +108,7 @@ public final class Contest {
         return out;
     }
 
-    /** A player's best entry — the one shown on their boss bar. */
+    /** A player's best entry, the one shown on their boss bar. */
     public Participant bestOf(UUID player) {
         Participant best = null;
         for (Participant entry : entriesOf(player)) {

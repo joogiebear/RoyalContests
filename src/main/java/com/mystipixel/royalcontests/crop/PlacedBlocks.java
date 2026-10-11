@@ -20,15 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Remembers which crop blocks a player placed, so they never score.
+ * Remembers which {@code natural-only} crop blocks a player placed, so they never score.
  *
- * <p>Without this, a melon, pumpkin or stack of sugar cane is a point you can place and break forever.
- * Positions live in each chunk's persistent data, so they survive restarts and unload with the chunk —
- * no file of our own, nothing to grow without bound.
- *
- * <p>Only blocks of crops marked {@code natural-only} are recorded. A block that <em>grows</em> into a
- * spot clears any stale mark there, and pistons carry marks along with the blocks they move, so pushing
- * a placed pumpkin does not launder it into a natural one.
+ * <p>Marks live in each chunk's persistent data, so they survive restarts and unload with the chunk.
+ * Growth clears a stale mark, and pistons carry marks with the blocks they move.
  */
 public final class PlacedBlocks implements Listener {
 
@@ -40,7 +35,6 @@ public final class PlacedBlocks implements Listener {
         this.crops = crops;
     }
 
-    /** Pack a block's position within its chunk into one int. */
     private static int pack(Block block) {
         return ((block.getY() + 4096) << 8) | ((block.getX() & 15) << 4) | (block.getZ() & 15);
     }
@@ -126,7 +120,7 @@ public final class PlacedBlocks implements Listener {
         return piston.getBlockData() instanceof Directional directional ? directional.getFacing() : null;
     }
 
-    /** Move marks with the blocks a piston moves: clear them all first, then set them one step along. */
+    // clear every mark first, then set them one step along: moved blocks can land on each other's old spots
     private void carry(List<Block> moved, BlockFace direction) {
         if (direction == null) {
             return;

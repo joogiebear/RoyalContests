@@ -1,8 +1,6 @@
-# ═══════════════════════════════════════════════════════════════════════════════
-#  RoyalContests  ·  crops.yml
-# ═══════════════════════════════════════════════════════════════════════════════
-#  What contests can be about. The key is the crop id used in events.yml,
-#  stats and rewards (%crop%).
+# RoyalContests crops.yml
+# What contests can be about. The key is the crop id used in events.yml,
+# stats and rewards (%crop%).
 #
 #    display-name : shown to players
 #    icon         : menu item
@@ -10,12 +8,11 @@
 #    drops        : items that count in `drops` scoring
 #    collection   : id for %collection% in `placeholder` scoring
 #    points       : points per block in `blocks` scoring (default 1)
-#    require-ripe : only fully grown blocks count (default true) — off for cane
+#    require-ripe : only fully grown blocks count (default true); off for cane
 #                   and cactus, whose "age" is a growth timer, not ripeness
 #    natural-only : player-placed blocks never count (default true)
 #    stacked      : blocks of this crop above the broken one fall with it and
 #                   count too (cane, cactus)
-# ═══════════════════════════════════════════════════════════════════════════════
 
 crops:
   wheat:

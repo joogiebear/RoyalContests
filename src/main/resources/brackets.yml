@@ -1,20 +1,17 @@
-# ═══════════════════════════════════════════════════════════════════════════════
-#  RoyalContests  ·  brackets.yml
-# ═══════════════════════════════════════════════════════════════════════════════
-#  Reward brackets, BEST FIRST. Each crop is ranked on its own, among players who
-#  reached contest.minimum-score. A player gets the first bracket they reach:
+# RoyalContests brackets.yml
+# Reward brackets, BEST FIRST. Each crop is ranked on its own, among players who
+# reached contest.minimum-score. A player gets the first bracket they reach:
 #
-#    top-percent   : placing in the top X% of their crop …
-#    top-positions : … OR in the top N places. This keeps small contests fair —
+#    top-percent   : placing in the top X% of their crop, OR
+#    top-positions : in the top N places. This keeps small contests fair:
 #                    with 5 players nobody is "top 2%", but 1st is still 1st.
 #
-#  commands : console commands run when the reward is CLAIMED
-#  messages : lines sent to the player when they claim it
-#  Placeholders: %player% %uuid% %crop% (id) %crop_name% %score% %position%
-#                %participants% %bracket%
-#  Rewards are saved with their commands filled in, so editing this file never
-#  changes a reward someone has already earned.
-# ═══════════════════════════════════════════════════════════════════════════════
+# commands : console commands run when the reward is CLAIMED
+# messages : lines sent to the player when they claim it
+# Placeholders: %player% %uuid% %crop% (id) %crop_name% %score% %position%
+#               %participants% %bracket%
+# Rewards are saved with their commands filled in, so editing this file never
+# changes a reward someone has already earned.
 
 brackets:
   diamond:

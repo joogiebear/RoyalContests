@@ -7,11 +7,8 @@ import org.bukkit.entity.Player;
 import java.util.regex.Pattern;
 
 /**
- * PlaceholderAPI, when installed.
- *
- * <p>Every call into PlaceholderAPI goes through here, behind an "is it enabled" check, so its classes
- * are only ever touched on a server that has it — RoyalContests runs fine without it, with placeholder
- * requirements reading as unmet and placeholder scoring unavailable.
+ * PlaceholderAPI, when installed. Every call goes through here behind an enabled check, so its classes
+ * are only touched on a server that has it.
  */
 public final class Papi {
 

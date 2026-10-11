@@ -13,16 +13,14 @@ public final class Ranking {
     private Ranking() {
     }
 
-    /** One ranked entry. */
     public record Placed<T>(T entry, long score, int position, int total, Bracket bracket) {
     }
 
     /**
      * Rank entries by score, highest first, and give each the best bracket it reaches.
      *
-     * <p>Ties share a place — two players on 500 are both 1st, and the next is 3rd — so a tie never
-     * decides a bracket by who happened to be listed first. Only entries scoring at least
-     * {@code minimum} are ranked; the rest are left out.
+     * <p>Ties share a place (two players on 500 are both 1st, the next is 3rd), so list order never
+     * decides a bracket. Only entries scoring at least {@code minimum} are ranked.
      *
      * @param brackets best first; an entry that reaches none gets a null bracket
      */

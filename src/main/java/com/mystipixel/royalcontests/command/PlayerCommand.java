@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * {@code /contests [claim|stats|calendar|top]} — the contest hub, or straight to one of its pages.
+ * {@code /contests [claim|stats|calendar|top]}: the contest hub, or straight to one of its pages.
  */
 public final class PlayerCommand implements TabExecutor {
 

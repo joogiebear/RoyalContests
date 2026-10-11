@@ -15,11 +15,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * One open menu. It is its inventory's holder, which is how clicks are recognised as ours.
- *
- * <p>The old menus were recognised by their title text, so any other inventory whose title contained
- * "Jacob's Contest" had its clicks swallowed, and a click in the player's own inventory below was read
- * as a slot of the menu above.
+ * One open menu. It is its inventory's holder, which is how clicks are recognised as ours; never match
+ * menus by title, another inventory can share it.
  */
 public final class Menu implements InventoryHolder {
 

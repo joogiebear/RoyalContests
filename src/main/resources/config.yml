@@ -1,30 +1,25 @@
-# ═══════════════════════════════════════════════════════════════════════════════
-#  RoyalContests  ·  config.yml
-# ═══════════════════════════════════════════════════════════════════════════════
-#  Other files:  crops.yml (what counts)  ·  events.yml (what runs)
-#                brackets.yml (rewards)   ·  messages.yml  ·  menus.yml
-#  Reload with /royalcontests reload. A contest already running keeps its settings.
-#  Durations: 20m, 1h30m, 45s …
-# ═══════════════════════════════════════════════════════════════════════════════
+# RoyalContests config.yml
+# Other files: crops.yml (what counts), events.yml (what runs), brackets.yml (rewards),
+# messages.yml and menus.yml.
+# Reload with /royalcontests reload. A contest already running keeps its settings.
+# Durations: 20m, 1h30m, 45s.
 
-# ── When contests run ─────────────────────────────────────────────────────────
 schedule:
-  # interval — on the clock, every `interval` (like Hypixel's every-3-SkyBlock-days)
-  # break    — the next one counts down `break` after the last one ended
-  # manual   — only /royalcontests start
+  # interval: on the clock, every `interval` (like Hypixel's every-3-SkyBlock-days)
+  # break:    the next one counts down `break` after the last one ended
+  # manual:   only /royalcontests start
   mode: interval
   interval: 1h
   # Shift from the top of the hour: 15m starts contests at :15.
   offset: 0m
   break: 40m
-  # sequential — events.yml rotation in order · random — weighted by each event's `weight`
+  # sequential: events.yml rotation in order. random: weighted by each event's `weight`.
   selection: sequential
   # Announce an upcoming contest this long before it starts.
   announce-before: [30m, 10m]
   # How many upcoming contests /contests calendar shows.
   calendar-size: 5
 
-# ── Contests ──────────────────────────────────────────────────────────────────
 contest:
   # Worlds contests count in, unless an event lists its own. * is a wildcard:
   # "garden_*" is every RoyalGarden Garden.
@@ -46,16 +41,14 @@ contest:
   # Leaders announced per crop when a contest ends.
   broadcast-top: 3
 
-# ── Scoring ───────────────────────────────────────────────────────────────────
 # Every mode only counts fully grown crops, never player-placed blocks, only in
 # contest worlds, only for the contest's crops.
 scoring:
-  # blocks      — `points` per block broken (crops.yml). Simple and exact.
-  # drops       — crop items that actually drop, so Fortune counts. Plugins that
-  #               pocket drops before they fall (auto-pickup, sacks) will hide them —
-  #               use placeholder mode with those.
-  # placeholder — the change in a collection placeholder since the player joined.
-  #               Counts everything the collection plugin counts. Needs PlaceholderAPI.
+  # blocks:      `points` per block broken (crops.yml).
+  # drops:       crop items that actually drop, so Fortune counts. Plugins that pocket
+  #              drops (auto-pickup, sacks) hide them; use placeholder mode with those.
+  # placeholder: the change in a collection placeholder since the player joined.
+  #              Needs PlaceholderAPI.
   mode: blocks
   # For placeholder mode. %collection% is the crop's `collection` id from crops.yml.
   #   AuroraCollections: "%aurora_collections_farming_%collection%_count_raw%"
@@ -64,14 +57,12 @@ scoring:
   # Breaks past this many per second don't count (macro / insta-break guard). 0 = off.
   max-breaks-per-second: 30
 
-# ── Who may compete ───────────────────────────────────────────────────────────
-# PlaceholderAPI checks, all of which must pass when a player first scores.
+# Who may compete: PlaceholderAPI checks, all of which must pass when a player first scores.
 #   - placeholder: "%ecoskills_farming%"
 #     min: 10
 #     message: "&cYou need &6Farming 10 &cto compete in contests!"
 requirements: []
 
-# ── Display ───────────────────────────────────────────────────────────────────
 display:
   # boss-bar, action-bar or none
   type: boss-bar
@@ -91,7 +82,6 @@ sounds:
   end: "entity.firework_rocket.blast 1 1"
   claim: "entity.player.levelup 1 1.5"
 
-# ── Rewards ───────────────────────────────────────────────────────────────────
 rewards:
   # false: rewards wait in /contests to be claimed.
   # true: given at once to players who are online when the contest ends.
@@ -101,7 +91,6 @@ leaderboards:
   refresh-seconds: 300
   size: 10
 
-# ── Storage ───────────────────────────────────────────────────────────────────
 storage:
   # sqlite or mysql
   type: sqlite

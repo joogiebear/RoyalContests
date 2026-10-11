@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * {@code %royalcontests_...%} — and the same under {@code %jacobscontest_...%}, so scoreboards written
+ * {@code %royalcontests_...%}, also registered as {@code %jacobscontest_...%} so scoreboards written
  * for the old plugin keep working.
  *
  * <pre>
@@ -33,8 +33,8 @@ import java.util.Locale;
  *   top_&lt;crop&gt;_&lt;n&gt;_name, top_&lt;crop&gt;_&lt;n&gt;_score
  * </pre>
  *
- * <p>Everything is answered from memory — the contest itself and {@link StatsCache} — never from the
- * database, because scoreboards ask on the server thread several times a second.
+ * <p>Answered from memory (the contest and {@link StatsCache}), never the database: scoreboards ask on
+ * the server thread several times a second.
  */
 public final class ContestExpansion extends PlaceholderExpansion {
 
@@ -164,7 +164,7 @@ public final class ContestExpansion extends PlaceholderExpansion {
         };
     }
 
-    /** {@code <crop>_<n>_name} or {@code <crop>_<n>_score}. Crop ids may contain underscores. */
+    // <crop>_<n>_name or <crop>_<n>_score; crop ids may contain underscores
     private String top(String rest) {
         int last = rest.lastIndexOf('_');
         int middle = last <= 0 ? -1 : rest.lastIndexOf('_', last - 1);

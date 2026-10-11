@@ -20,9 +20,8 @@ import java.util.logging.Logger;
 /**
  * The crops contests can be about, from {@code crops.yml}.
  *
- * <p>A crop is a set of blocks rather than one material, so custom setups (glow berries, a modded
- * crop, a crop that is two blocks) need no code — and so a block can only ever be one crop, which is
- * what lets a break be attributed without guessing.
+ * <p>A crop is a set of blocks rather than one material, so custom setups need no code, and a block
+ * belongs to at most one crop, so a break is attributed without guessing.
  */
 public final class CropRegistry {
 
@@ -47,7 +46,7 @@ public final class CropRegistry {
         byBlock.clear();
         ConfigurationSection root = file.yaml().getConfigurationSection("crops");
         if (root == null) {
-            logger.warning("crops.yml has no crops: section — contests have nothing to count.");
+            logger.warning("crops.yml has no crops: section; contests have nothing to count.");
             return;
         }
         for (String id : root.getKeys(false)) {

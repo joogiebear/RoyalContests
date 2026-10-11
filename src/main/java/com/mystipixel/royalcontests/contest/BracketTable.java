@@ -12,8 +12,7 @@ import java.util.Locale;
 /**
  * The reward brackets, best first, from {@code brackets.yml}.
  *
- * <p>Order is the order written in the file — the first bracket a player reaches is theirs — so an
- * admin can add a bracket anywhere in the ladder without renumbering anything.
+ * <p>File order is ladder order: the first bracket a player reaches is theirs.
  */
 public final class BracketTable {
 

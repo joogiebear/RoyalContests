@@ -25,26 +25,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Decides whether a broken block counts, and hands it to the contest.
+ * Decides whether a broken block counts, for every scoring mode. It counts only if a contest is running
+ * in this world for this crop, the crop is fully grown (if it has an age), no player placed it (for
+ * {@code natural-only} crops), and the player is in survival or adventure.
  *
- * <p>Every rule lives here, once, whatever the scoring mode. The old plugin split them between a
- * lock-in listener and a listener per mode, and the modes did not agree: drop scoring counted any block
- * at all (breaking dirt scored a point), block scoring counted unripe crops (plant, break, repeat), and
- * neither checked for placed melons. A block counts only if:
- *
- * <ol>
- *   <li>a contest is running, in a world it covers, about this crop;</li>
- *   <li>it is fully grown, for crops that have an age;</li>
- *   <li>no player placed it, for crops marked {@code natural-only};</li>
- *   <li>the player is in survival or adventure — creative breaks nothing that matters.</li>
- * </ol>
- *
- * <p>Then the scoring mode decides the points: {@code blocks} per block, {@code drops} per crop item
- * actually dropped (so Fortune counts), {@code placeholder} from a collection plugin.
+ * <p>Points: {@code blocks} per block, {@code drops} per crop item dropped (so Fortune counts),
+ * {@code placeholder} from a collection plugin.
  */
 public final class HarvestListener implements Listener {
 
-    /** A break waiting for its drops, in drops mode. Keyed by block position. */
+    // a break waiting for its drops, in drops mode; keyed by block position
     private record PendingDrops(Participant entry, CropType crop, int stackedAbove) {
     }
 
@@ -101,10 +91,7 @@ public final class HarvestListener implements Listener {
         }
     }
 
-    /**
-     * How many blocks of the same crop stand on top of this one and will fall with it — sugar cane and
-     * cactus break as a column, and only the bottom block fires a break event.
-     */
+    // sugar cane and cactus break as a column, and only the bottom block fires a break event
     private int countStackedAbove(Block block, CropType crop) {
         int count = 0;
         Block above = block.getRelative(BlockFace.UP);
@@ -122,7 +109,7 @@ public final class HarvestListener implements Listener {
 
     /**
      * Drops mode: count what actually dropped. Runs at {@code MONITOR}, so a plugin that pockets drops
-     * earlier (auto-pickup, sacks) leaves nothing to count — use placeholder scoring with those.
+     * earlier (auto-pickup, sacks) leaves nothing to count; use placeholder scoring with those.
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDrops(BlockDropItemEvent event) {

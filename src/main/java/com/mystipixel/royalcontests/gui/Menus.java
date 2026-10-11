@@ -88,8 +88,6 @@ public final class Menus {
         }
     }
 
-    // ── the hub ────────────────────────────────────────────────────────────────
-
     public void openMain(Player player) {
         Menu menu = menu("main", 4);
         String base = "main.items.";
@@ -112,7 +110,7 @@ public final class Menus {
         finish(menu, player);
     }
 
-    /** Close, then run the command as the player next tick, so it can safely open another menu. */
+    // run next tick, so the command can safely open another menu
     private void runCommand(Player player, String command) {
         player.closeInventory();
         Bukkit.getScheduler().runTask(plugin, () -> player.performCommand(command));
@@ -150,8 +148,6 @@ public final class Menus {
                 "%at%", when(next.startAt()));
     }
 
-    // ── rewards ────────────────────────────────────────────────────────────────
-
     public void openClaim(Player player) {
         rewards.database().pending(player.getUniqueId()).thenAccept(list -> Bukkit.getScheduler().runTask(plugin,
                 () -> showClaim(player, list)));
@@ -187,8 +183,6 @@ public final class Menus {
         finish(menu, player);
     }
 
-    // ── stats ──────────────────────────────────────────────────────────────────
-
     public void openStats(Player player) {
         Menu menu = menu("stats", 4);
         int slot = 0;
@@ -208,8 +202,6 @@ public final class Menus {
         menu.set(slot("stats.back", menu.size() - 5), Items.build(section("stats.back"), Material.ARROW), this::openMain);
         finish(menu, player);
     }
-
-    // ── calendar ───────────────────────────────────────────────────────────────
 
     public void openCalendar(Player player) {
         Menu menu = menu("calendar", 3);
@@ -233,8 +225,6 @@ public final class Menus {
         menu.set(slot("calendar.back", menu.size() - 5), Items.build(section("calendar.back"), Material.ARROW), this::openMain);
         finish(menu, player);
     }
-
-    // ── leaderboards ───────────────────────────────────────────────────────────
 
     public void openLeaderboards(Player player) {
         Menu menu = menu("leaderboards", 4);

@@ -31,13 +31,8 @@ import java.util.logging.Level;
 /**
  * RoyalContests: Jacob's-style farming contests for the Royal suite.
  *
- * <p>Contests run on a schedule, in the worlds you choose — every RoyalGarden Garden by default — about
- * a few crops at a time. Each crop is ranked on its own, brackets are reached by percentile or by
- * placing, and rewards wait in {@code /contests} to be claimed. Every value lives in one of the YAML
- * files in the plugin folder.
- *
- * <p>This replaces JacobsContest. Its database tables are read as they are, and its {@code data.db} is
- * copied across on first start, so stats and unclaimed rewards carry over.
+ * <p>Replaces JacobsContest: its database tables are read as they are, and its {@code data.db} is
+ * copied across on first start.
  */
 public final class RoyalContests extends JavaPlugin {
 
@@ -136,10 +131,7 @@ public final class RoyalContests extends JavaPlugin {
         }
     }
 
-    /**
-     * Bring JacobsContest's data across: its {@code data.db} is copied (never moved) into this folder the
-     * first time RoyalContests starts. The table layout is shared, so nothing else is needed.
-     */
+    // copy (never move) JacobsContest's data.db on first start; the table layout is shared
     private void migrateFromJacobsContest() {
         File old = new File(getDataFolder().getParentFile(), "JacobsContest/data.db");
         File ours = new File(getDataFolder(), "data.db");
@@ -149,7 +141,7 @@ public final class RoyalContests extends JavaPlugin {
         try {
             Files.createDirectories(getDataFolder().toPath());
             Files.copy(old.toPath(), ours.toPath());
-            getLogger().info("Copied JacobsContest's data.db — stats and unclaimed rewards carry over. "
+            getLogger().info("Copied JacobsContest's data.db; stats and unclaimed rewards carry over. "
                     + "Its config files use a different layout and were not copied; see the new ones.");
         } catch (IOException failed) {
             getLogger().log(Level.WARNING, "Could not copy JacobsContest's data.db", failed);
