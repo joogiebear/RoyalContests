@@ -1,3 +1,18 @@
+## 2026.41.0 - 2026-10-10
+
+### Features
+- add an optional command button to the contests hub (`ad3cc9e`)
+
+### Fixes
+- treat an unresolved scoring placeholder as no reading (`8a344f7`)
+
+### Refactors
+- read the missing menu item text from config (`2fac335`)
+- read all player-facing text from config (`4215172`)
+
+### Documentation
+- add AGENTS.md with the suite's development standards (`ee2d855`)
+
 ## 2026.39.0 — 2026-09-26
 
 ### 🐛 Fixes
