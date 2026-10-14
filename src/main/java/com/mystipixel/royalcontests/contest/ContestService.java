@@ -332,6 +332,7 @@ public final class ContestService {
         lang.broadcast("contest-ended", "%event%", ended.event().displayName());
         long finishedAt = System.currentTimeMillis();
         int minimum = settings.minimumScore();
+        List<RewardService.Placing> placings = new ArrayList<>();
         for (String cropId : ended.crops()) {
             CropType crop = crops.get(cropId);
             String cropName = crop == null ? cropId : crop.displayName();
@@ -355,10 +356,10 @@ public final class ContestService {
             for (Ranking.Placed<Participant> p : placed) {
                 ranked.add(p.entry());
                 Participant entry = p.entry();
-                rewards.record(new Result(ended.id(), ended.event().id(), cropId, entry.player(), entry.name(),
-                                p.score(), p.position(), p.total(), p.bracket() == null ? null : p.bracket().id(),
-                                finishedAt),
-                        ended.event().displayName(), p.bracket(), cropName, shuttingDown);
+                placings.add(new RewardService.Placing(new Result(ended.id(), ended.event().id(), cropId,
+                        entry.player(), entry.name(), p.score(), p.position(), p.total(),
+                        p.bracket() == null ? null : p.bracket().id(), finishedAt),
+                        ended.event().displayName(), p.bracket(), cropName));
                 Player online = Bukkit.getPlayer(entry.player());
                 if (online != null) {
                     lang.send(online, "result-personal", "%crop%", cropName, "%score%", String.valueOf(p.score()),
@@ -370,9 +371,9 @@ public final class ContestService {
                 if (ranked.contains(entry) || entry.score() <= 0) {
                     continue;
                 }
-                rewards.record(new Result(ended.id(), ended.event().id(), cropId, entry.player(), entry.name(),
-                        entry.score(), 0, placed.size(), null, finishedAt), ended.event().displayName(), null,
-                        cropName, shuttingDown);
+                placings.add(new RewardService.Placing(new Result(ended.id(), ended.event().id(), cropId,
+                        entry.player(), entry.name(), entry.score(), 0, placed.size(), null, finishedAt),
+                        ended.event().displayName(), null, cropName));
                 Player online = Bukkit.getPlayer(entry.player());
                 if (online != null) {
                     lang.send(online, "below-minimum", "%crop%", cropName, "%score%", String.valueOf(entry.score()),
@@ -380,6 +381,7 @@ public final class ContestService {
                 }
             }
         }
+        rewards.record(placings, shuttingDown);
         if (!shuttingDown) {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 settings.playSound(player, "end");
