@@ -101,12 +101,17 @@ public final class Database {
                     + "crop VARCHAR(64) NOT NULL, uuid VARCHAR(36) NOT NULL, player_name VARCHAR(64) NOT NULL, "
                     + "score BIGINT NOT NULL, position INT NOT NULL, participants INT NOT NULL, "
                     + "bracket VARCHAR(32), finished_at BIGINT NOT NULL)");
+            // leaderboards sort player_stats by crop and best, and look up each leader's latest name by uuid
             if (!mysql) {
                 s.executeUpdate("CREATE INDEX IF NOT EXISTS idx_rewards_uuid ON pending_rewards(uuid, claimed)");
-                s.executeUpdate("CREATE INDEX IF NOT EXISTS idx_results_uuid ON contest_results(uuid)");
+                s.executeUpdate("CREATE INDEX IF NOT EXISTS idx_results_uuid_time ON contest_results(uuid, finished_at)");
+                s.executeUpdate("CREATE INDEX IF NOT EXISTS idx_stats_crop_best ON player_stats(crop, personal_best)");
+                s.executeUpdate("DROP INDEX IF EXISTS idx_results_uuid");
             } else {
                 createIndexQuietly(s, "CREATE INDEX idx_rewards_uuid ON pending_rewards(uuid, claimed)");
-                createIndexQuietly(s, "CREATE INDEX idx_results_uuid ON contest_results(uuid)");
+                createIndexQuietly(s, "CREATE INDEX idx_results_uuid_time ON contest_results(uuid, finished_at)");
+                createIndexQuietly(s, "CREATE INDEX idx_stats_crop_best ON player_stats(crop, personal_best)");
+                createIndexQuietly(s, "DROP INDEX idx_results_uuid ON contest_results");
             }
         }
     }
