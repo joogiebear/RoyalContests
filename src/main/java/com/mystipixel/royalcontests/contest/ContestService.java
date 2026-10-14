@@ -11,6 +11,9 @@ import com.mystipixel.royalcontests.storage.RewardService;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -39,7 +42,7 @@ import java.util.UUID;
  *   <li><b>manual</b>: only {@code /royalcontests start}.</li>
  * </ul>
  */
-public final class ContestService {
+public final class ContestService implements Listener {
 
     public enum State { IDLE, COUNTDOWN, RUNNING }
 
@@ -578,6 +581,11 @@ public final class ContestService {
         }
         long target = state == State.COUNTDOWN ? contest.startAt() : contest.endAt();
         return Math.max(0, target - System.currentTimeMillis());
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        forget(event.getPlayer().getUniqueId());
     }
 
     public void forget(UUID player) {

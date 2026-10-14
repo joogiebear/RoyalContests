@@ -86,6 +86,7 @@ public final class RoyalContests extends JavaPlugin {
         plugins.registerEvents(placed, this);
         plugins.registerEvents(harvests, this);
         plugins.registerEvents(cache, this);
+        plugins.registerEvents(contests, this);
         plugins.registerEvents(new Menu.Clicks(), this);
 
         command("royalcontests", new AdminCommand(lang, contests, events, crops, this::reloadAll));
