@@ -49,6 +49,9 @@ public final class ContestService {
 
     private static final long NOTICE_COOLDOWN = 5_000L;
 
+    private record UnmetCheck(Settings.Requirement requirement, long at) {
+    }
+
     private final Plugin plugin;
     private final Settings settings;
     private final Lang lang;
@@ -67,6 +70,8 @@ public final class ContestService {
     private long breakIndex;
     private final Set<String> announced = new HashSet<>();
     private final Map<UUID, Long> lastNotice = new HashMap<>();
+    // a failed entry check is reused for NOTICE_COOLDOWN, so each further break skips the PlaceholderAPI calls
+    private final Map<UUID, UnmetCheck> unmetChecks = new HashMap<>();
     private final Set<String> warnedPlaceholders = new HashSet<>();
     // live placings, rebuilt every second while a contest runs
     private Map<Participant, Ranking.Placed<Participant>> live = new IdentityHashMap<>();
@@ -408,7 +413,7 @@ public final class ContestService {
                 notice(player, "wrong-crop", "%crop%", lockedCrop == null ? locked : lockedCrop.displayName());
                 return null;
             }
-            Settings.Requirement unmet = settings.unmet(player);
+            Settings.Requirement unmet = unmet(player);
             if (unmet != null) {
                 if (unmet.message().isEmpty()) {
                     notice(player, "requirement-not-met", "%required%", String.valueOf(unmet.min()));
@@ -528,6 +533,21 @@ public final class ContestService {
         }
     }
 
+    private Settings.Requirement unmet(Player player) {
+        long now = System.currentTimeMillis();
+        UnmetCheck last = unmetChecks.get(player.getUniqueId());
+        if (last != null && now - last.at() < NOTICE_COOLDOWN) {
+            return last.requirement();
+        }
+        Settings.Requirement unmet = settings.unmet(player);
+        if (unmet == null) {
+            unmetChecks.remove(player.getUniqueId());
+        } else {
+            unmetChecks.put(player.getUniqueId(), new UnmetCheck(unmet, now));
+        }
+        return unmet;
+    }
+
     // refusals are rate-limited: one per few seconds, not one per crop broken
     private boolean noticeDue(Player player) {
         long now = System.currentTimeMillis();
@@ -562,5 +582,6 @@ public final class ContestService {
 
     public void forget(UUID player) {
         lastNotice.remove(player);
+        unmetChecks.remove(player);
     }
 }
