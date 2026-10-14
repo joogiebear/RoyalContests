@@ -71,19 +71,26 @@ public final class StatsCache implements Listener {
 
     private void refreshLeaderboards() {
         for (CropType crop : crops.all()) {
+            // names missing from the results are looked up on the server thread, not the database worker
             database.leaderboard(crop.id(), settings.leaderboardSize()).thenAccept(rows -> {
-                List<Leader> named = new ArrayList<>(rows.size());
-                for (Leader row : rows) {
-                    String name = row.name();
-                    if ("?".equals(name)) {
-                        OfflinePlayer offline = Bukkit.getOfflinePlayer(row.player());
-                        name = offline.getName() == null ? "?" : offline.getName();
-                    }
-                    named.add(new Leader(row.player(), name, row.score()));
+                if (plugin.isEnabled()) {
+                    Bukkit.getScheduler().runTask(plugin, () -> leaders.put(crop.id(), named(rows)));
                 }
-                leaders.put(crop.id(), named);
             });
         }
+    }
+
+    private static List<Leader> named(List<Leader> rows) {
+        List<Leader> named = new ArrayList<>(rows.size());
+        for (Leader row : rows) {
+            String name = row.name();
+            if ("?".equals(name)) {
+                OfflinePlayer offline = Bukkit.getOfflinePlayer(row.player());
+                name = offline.getName() == null ? "?" : offline.getName();
+            }
+            named.add(new Leader(row.player(), name, row.score()));
+        }
+        return named;
     }
 
     /** (Re)load one player's stats and unclaimed count. */

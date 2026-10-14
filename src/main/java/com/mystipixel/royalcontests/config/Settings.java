@@ -32,8 +32,17 @@ public final class Settings extends YamlFile {
 
     public enum Display { BOSS_BAR, ACTION_BAR, NONE }
 
+    // parsed on first use after each reload; not initialised here, since the super constructor calls reload()
+    private List<Requirement> requirements;
+
     public Settings(Plugin plugin) {
         super(plugin, "config.yml", true);
+    }
+
+    @Override
+    public void reload() {
+        super.reload();
+        requirements = null;
     }
 
     public ScheduleMode scheduleMode() {
@@ -129,6 +138,13 @@ public final class Settings extends YamlFile {
     }
 
     public List<Requirement> requirements() {
+        if (requirements == null) {
+            requirements = parseRequirements();
+        }
+        return requirements;
+    }
+
+    private List<Requirement> parseRequirements() {
         List<Requirement> out = new ArrayList<>();
         for (Map<?, ?> raw : yaml().getMapList("requirements")) {
             Object placeholder = raw.get("placeholder");
@@ -140,7 +156,7 @@ public final class Settings extends YamlFile {
             out.add(new Requirement(placeholder.toString(), number.doubleValue(),
                     message == null ? "" : message.toString()));
         }
-        return out;
+        return List.copyOf(out);
     }
 
     /** The first requirement a player does not meet, or null. */

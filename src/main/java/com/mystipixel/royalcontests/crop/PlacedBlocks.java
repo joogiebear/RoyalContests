@@ -54,23 +54,27 @@ public final class PlacedBlocks implements Listener {
     }
 
     public void mark(Block block) {
-        if (isPlaced(block)) {
-            return;
-        }
         PersistentDataContainer pdc = block.getChunk().getPersistentDataContainer();
         int[] marks = pdc.getOrDefault(key, PersistentDataType.INTEGER_ARRAY, new int[0]);
+        int packed = pack(block);
+        for (int mark : marks) {
+            if (mark == packed) {
+                return;
+            }
+        }
         int[] grown = new int[marks.length + 1];
         System.arraycopy(marks, 0, grown, 0, marks.length);
-        grown[marks.length] = pack(block);
+        grown[marks.length] = packed;
         pdc.set(key, PersistentDataType.INTEGER_ARRAY, grown);
     }
 
-    public void unmark(Block block) {
+    /** Clears the mark; true if the block was marked as placed. Reads the chunk's marks once. */
+    public boolean unmark(Block block) {
         Chunk chunk = block.getChunk();
         PersistentDataContainer pdc = chunk.getPersistentDataContainer();
         int[] marks = pdc.get(key, PersistentDataType.INTEGER_ARRAY);
         if (marks == null) {
-            return;
+            return false;
         }
         int packed = pack(block);
         int kept = 0;
@@ -81,7 +85,7 @@ public final class PlacedBlocks implements Listener {
             }
         }
         if (kept == marks.length) {
-            return;
+            return false;
         }
         if (kept == 0) {
             pdc.remove(key);
@@ -90,6 +94,7 @@ public final class PlacedBlocks implements Listener {
             System.arraycopy(out, 0, trimmed, 0, kept);
             pdc.set(key, PersistentDataType.INTEGER_ARRAY, trimmed);
         }
+        return true;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -102,7 +107,10 @@ public final class PlacedBlocks implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onGrow(BlockGrowEvent event) {
-        unmark(event.getBlock());
+        // fires for every crop on the server; only a tracked block can carry a mark that matters
+        if (crops.tracksPlacement(event.getNewState().getType())) {
+            unmark(event.getBlock());
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

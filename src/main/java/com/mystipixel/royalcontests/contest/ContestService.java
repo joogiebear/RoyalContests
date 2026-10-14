@@ -11,6 +11,9 @@ import com.mystipixel.royalcontests.storage.RewardService;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -39,7 +42,7 @@ import java.util.UUID;
  *   <li><b>manual</b>: only {@code /royalcontests start}.</li>
  * </ul>
  */
-public final class ContestService {
+public final class ContestService implements Listener {
 
     public enum State { IDLE, COUNTDOWN, RUNNING }
 
@@ -48,6 +51,9 @@ public final class ContestService {
     }
 
     private static final long NOTICE_COOLDOWN = 5_000L;
+
+    private record UnmetCheck(Settings.Requirement requirement, long at) {
+    }
 
     private final Plugin plugin;
     private final Settings settings;
@@ -67,6 +73,8 @@ public final class ContestService {
     private long breakIndex;
     private final Set<String> announced = new HashSet<>();
     private final Map<UUID, Long> lastNotice = new HashMap<>();
+    // a failed entry check is reused for NOTICE_COOLDOWN, so each further break skips the PlaceholderAPI calls
+    private final Map<UUID, UnmetCheck> unmetChecks = new HashMap<>();
     private final Set<String> warnedPlaceholders = new HashSet<>();
     // live placings, rebuilt every second while a contest runs
     private Map<Participant, Ranking.Placed<Participant>> live = new IdentityHashMap<>();
@@ -332,6 +340,7 @@ public final class ContestService {
         lang.broadcast("contest-ended", "%event%", ended.event().displayName());
         long finishedAt = System.currentTimeMillis();
         int minimum = settings.minimumScore();
+        List<RewardService.Placing> placings = new ArrayList<>();
         for (String cropId : ended.crops()) {
             CropType crop = crops.get(cropId);
             String cropName = crop == null ? cropId : crop.displayName();
@@ -355,10 +364,10 @@ public final class ContestService {
             for (Ranking.Placed<Participant> p : placed) {
                 ranked.add(p.entry());
                 Participant entry = p.entry();
-                rewards.record(new Result(ended.id(), ended.event().id(), cropId, entry.player(), entry.name(),
-                                p.score(), p.position(), p.total(), p.bracket() == null ? null : p.bracket().id(),
-                                finishedAt),
-                        ended.event().displayName(), p.bracket(), cropName, shuttingDown);
+                placings.add(new RewardService.Placing(new Result(ended.id(), ended.event().id(), cropId,
+                        entry.player(), entry.name(), p.score(), p.position(), p.total(),
+                        p.bracket() == null ? null : p.bracket().id(), finishedAt),
+                        ended.event().displayName(), p.bracket(), cropName));
                 Player online = Bukkit.getPlayer(entry.player());
                 if (online != null) {
                     lang.send(online, "result-personal", "%crop%", cropName, "%score%", String.valueOf(p.score()),
@@ -370,9 +379,9 @@ public final class ContestService {
                 if (ranked.contains(entry) || entry.score() <= 0) {
                     continue;
                 }
-                rewards.record(new Result(ended.id(), ended.event().id(), cropId, entry.player(), entry.name(),
-                        entry.score(), 0, placed.size(), null, finishedAt), ended.event().displayName(), null,
-                        cropName, shuttingDown);
+                placings.add(new RewardService.Placing(new Result(ended.id(), ended.event().id(), cropId,
+                        entry.player(), entry.name(), entry.score(), 0, placed.size(), null, finishedAt),
+                        ended.event().displayName(), null, cropName));
                 Player online = Bukkit.getPlayer(entry.player());
                 if (online != null) {
                     lang.send(online, "below-minimum", "%crop%", cropName, "%score%", String.valueOf(entry.score()),
@@ -380,6 +389,7 @@ public final class ContestService {
                 }
             }
         }
+        rewards.record(placings, shuttingDown);
         if (!shuttingDown) {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 settings.playSound(player, "end");
@@ -406,7 +416,7 @@ public final class ContestService {
                 notice(player, "wrong-crop", "%crop%", lockedCrop == null ? locked : lockedCrop.displayName());
                 return null;
             }
-            Settings.Requirement unmet = settings.unmet(player);
+            Settings.Requirement unmet = unmet(player);
             if (unmet != null) {
                 if (unmet.message().isEmpty()) {
                     notice(player, "requirement-not-met", "%required%", String.valueOf(unmet.min()));
@@ -526,6 +536,21 @@ public final class ContestService {
         }
     }
 
+    private Settings.Requirement unmet(Player player) {
+        long now = System.currentTimeMillis();
+        UnmetCheck last = unmetChecks.get(player.getUniqueId());
+        if (last != null && now - last.at() < NOTICE_COOLDOWN) {
+            return last.requirement();
+        }
+        Settings.Requirement unmet = settings.unmet(player);
+        if (unmet == null) {
+            unmetChecks.remove(player.getUniqueId());
+        } else {
+            unmetChecks.put(player.getUniqueId(), new UnmetCheck(unmet, now));
+        }
+        return unmet;
+    }
+
     // refusals are rate-limited: one per few seconds, not one per crop broken
     private boolean noticeDue(Player player) {
         long now = System.currentTimeMillis();
@@ -558,7 +583,13 @@ public final class ContestService {
         return Math.max(0, target - System.currentTimeMillis());
     }
 
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        forget(event.getPlayer().getUniqueId());
+    }
+
     public void forget(UUID player) {
         lastNotice.remove(player);
+        unmetChecks.remove(player);
     }
 }

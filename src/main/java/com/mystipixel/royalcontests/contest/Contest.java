@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A contest that is counting down or running: the event, the crops chosen for it, when it starts and
@@ -28,6 +29,8 @@ public final class Contest {
     private final Map<String, Map<UUID, Participant>> entries = new LinkedHashMap<>();
     // the crop each player is locked to, when lock-in is on
     private final Map<UUID, String> locked = new HashMap<>();
+    // world name -> counts; asked on every crop break and every second per online player
+    private final Map<String, Boolean> countedWorlds = new ConcurrentHashMap<>();
 
     public Contest(ContestEvent event, List<String> crops, List<String> worlds, long startAt, long slot) {
         this.event = event;
@@ -67,7 +70,7 @@ public final class Contest {
     }
 
     public boolean counts(String world) {
-        return Settings.worldMatches(world, worlds);
+        return countedWorlds.computeIfAbsent(world, name -> Settings.worldMatches(name, worlds));
     }
 
     public boolean has(String crop) {

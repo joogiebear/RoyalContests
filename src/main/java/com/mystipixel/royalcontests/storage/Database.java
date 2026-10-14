@@ -18,6 +18,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -73,6 +74,12 @@ public final class Database {
             hikari.setJdbcUrl("jdbc:sqlite:" + file.getAbsolutePath());
             hikari.setDriverClassName("org.sqlite.JDBC");
             hikari.setMaximumPoolSize(1);
+            // driver properties reach every connection; FULL so a claimed reward stays claimed after a power loss
+            Properties sqlite = new Properties();
+            sqlite.setProperty("journal_mode", "WAL");
+            sqlite.setProperty("synchronous", "FULL");
+            sqlite.setProperty("busy_timeout", "5000");
+            hikari.setDataSourceProperties(sqlite);
         }
         hikari.setConnectionTimeout(10_000);
         this.pool = new HikariDataSource(hikari);
@@ -101,12 +108,17 @@ public final class Database {
                     + "crop VARCHAR(64) NOT NULL, uuid VARCHAR(36) NOT NULL, player_name VARCHAR(64) NOT NULL, "
                     + "score BIGINT NOT NULL, position INT NOT NULL, participants INT NOT NULL, "
                     + "bracket VARCHAR(32), finished_at BIGINT NOT NULL)");
+            // leaderboards sort player_stats by crop and best, and look up each leader's latest name by uuid
             if (!mysql) {
                 s.executeUpdate("CREATE INDEX IF NOT EXISTS idx_rewards_uuid ON pending_rewards(uuid, claimed)");
-                s.executeUpdate("CREATE INDEX IF NOT EXISTS idx_results_uuid ON contest_results(uuid)");
+                s.executeUpdate("CREATE INDEX IF NOT EXISTS idx_results_uuid_time ON contest_results(uuid, finished_at)");
+                s.executeUpdate("CREATE INDEX IF NOT EXISTS idx_stats_crop_best ON player_stats(crop, personal_best)");
+                s.executeUpdate("DROP INDEX IF EXISTS idx_results_uuid");
             } else {
                 createIndexQuietly(s, "CREATE INDEX idx_rewards_uuid ON pending_rewards(uuid, claimed)");
-                createIndexQuietly(s, "CREATE INDEX idx_results_uuid ON contest_results(uuid)");
+                createIndexQuietly(s, "CREATE INDEX idx_results_uuid_time ON contest_results(uuid, finished_at)");
+                createIndexQuietly(s, "CREATE INDEX idx_stats_crop_best ON player_stats(crop, personal_best)");
+                createIndexQuietly(s, "DROP INDEX idx_results_uuid ON contest_results");
             }
         }
     }
@@ -153,57 +165,79 @@ public final class Database {
     public record Recorded(boolean newBest, int rewardId) {
     }
 
+    /** A placing to record, with its reward or null. */
+    public record Placing(Result result, PendingReward reward) {
+    }
+
     /**
-     * Record a placing, fold it into the player's stats and save its reward if it has one, as one queued
-     * task: during shutdown a follow-up task would arrive after {@link #close} and the reward would be lost.
+     * Record a finished contest's placings, fold each into the player's stats and save the rewards, as
+     * one queued task and one transaction: during shutdown a follow-up task would arrive after
+     * {@link #close} and the rewards would be lost. Results come back in the same order.
      *
-     * @param reward      the reward to save, or null
      * @param bracketRank orders bracket ids, lower being better, to keep each player's best
      */
-    public CompletableFuture<Recorded> record(Result result, PendingReward reward, ToIntFunction<String> bracketRank) {
-        return submit("recording a result", c -> {
-            try (PreparedStatement ps = c.prepareStatement("INSERT INTO contest_results (contest_id, event, "
-                    + "crop, uuid, player_name, score, position, participants, bracket, finished_at) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
-                ps.setString(1, result.contestId());
-                ps.setString(2, result.event());
-                ps.setString(3, result.crop());
-                ps.setString(4, result.player().toString());
-                ps.setString(5, result.playerName());
-                ps.setLong(6, result.score());
-                ps.setInt(7, result.position());
-                ps.setInt(8, result.total());
-                ps.setString(9, result.bracket());
-                ps.setLong(10, result.finishedAt());
-                ps.executeUpdate();
+    public CompletableFuture<List<Recorded>> record(List<Placing> placings, ToIntFunction<String> bracketRank) {
+        return submit("recording contest results", c -> {
+            List<Recorded> out = new ArrayList<>(placings.size());
+            c.setAutoCommit(false);
+            try {
+                for (Placing placing : placings) {
+                    out.add(record(c, placing.result(), placing.reward(), bracketRank));
+                }
+                c.commit();
+            } catch (SQLException | RuntimeException failed) {
+                c.rollback();
+                throw failed;
+            } finally {
+                c.setAutoCommit(true);
             }
-            PlayerStats old = readStats(c, result.player(), result.crop());
-            boolean newBest = result.score() > old.personalBest();
-            String best = old.bestBracket();
-            if (result.bracket() != null
-                    && bracketRank.applyAsInt(result.bracket()) < bracketRank.applyAsInt(best)) {
-                best = result.bracket();
-            }
-            try (PreparedStatement ps = c.prepareStatement(mysql
-                    ? "INSERT INTO player_stats (uuid, crop, personal_best, total_harvested, contests_participated, "
-                    + "best_bracket) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE personal_best = VALUES(personal_best), "
-                    + "total_harvested = VALUES(total_harvested), contests_participated = VALUES(contests_participated), "
-                    + "best_bracket = VALUES(best_bracket)"
-                    : "INSERT INTO player_stats (uuid, crop, personal_best, total_harvested, contests_participated, "
-                    + "best_bracket) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(uuid, crop) DO UPDATE SET "
-                    + "personal_best = excluded.personal_best, total_harvested = excluded.total_harvested, "
-                    + "contests_participated = excluded.contests_participated, best_bracket = excluded.best_bracket")) {
-                ps.setString(1, result.player().toString());
-                ps.setString(2, result.crop());
-                ps.setLong(3, Math.max(old.personalBest(), result.score()));
-                ps.setLong(4, old.totalHarvested() + result.score());
-                ps.setInt(5, old.contests() + 1);
-                ps.setString(6, best == null ? "NONE" : best);
-                ps.executeUpdate();
-            }
-            int rewardId = reward == null ? -1 : insertReward(c, reward);
-            return new Recorded(newBest, rewardId);
+            return out;
         });
+    }
+
+    private Recorded record(Connection c, Result result, PendingReward reward, ToIntFunction<String> bracketRank)
+            throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("INSERT INTO contest_results (contest_id, event, "
+                + "crop, uuid, player_name, score, position, participants, bracket, finished_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+            ps.setString(1, result.contestId());
+            ps.setString(2, result.event());
+            ps.setString(3, result.crop());
+            ps.setString(4, result.player().toString());
+            ps.setString(5, result.playerName());
+            ps.setLong(6, result.score());
+            ps.setInt(7, result.position());
+            ps.setInt(8, result.total());
+            ps.setString(9, result.bracket());
+            ps.setLong(10, result.finishedAt());
+            ps.executeUpdate();
+        }
+        PlayerStats old = readStats(c, result.player(), result.crop());
+        boolean newBest = result.score() > old.personalBest();
+        String best = old.bestBracket();
+        if (result.bracket() != null
+                && bracketRank.applyAsInt(result.bracket()) < bracketRank.applyAsInt(best)) {
+            best = result.bracket();
+        }
+        try (PreparedStatement ps = c.prepareStatement(mysql
+                ? "INSERT INTO player_stats (uuid, crop, personal_best, total_harvested, contests_participated, "
+                + "best_bracket) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE personal_best = VALUES(personal_best), "
+                + "total_harvested = VALUES(total_harvested), contests_participated = VALUES(contests_participated), "
+                + "best_bracket = VALUES(best_bracket)"
+                : "INSERT INTO player_stats (uuid, crop, personal_best, total_harvested, contests_participated, "
+                + "best_bracket) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(uuid, crop) DO UPDATE SET "
+                + "personal_best = excluded.personal_best, total_harvested = excluded.total_harvested, "
+                + "contests_participated = excluded.contests_participated, best_bracket = excluded.best_bracket")) {
+            ps.setString(1, result.player().toString());
+            ps.setString(2, result.crop());
+            ps.setLong(3, Math.max(old.personalBest(), result.score()));
+            ps.setLong(4, old.totalHarvested() + result.score());
+            ps.setInt(5, old.contests() + 1);
+            ps.setString(6, best == null ? "NONE" : best);
+            ps.executeUpdate();
+        }
+        int rewardId = reward == null ? -1 : insertReward(c, reward);
+        return new Recorded(newBest, rewardId);
     }
 
     private static PlayerStats readStats(Connection c, UUID player, String crop) throws SQLException {

@@ -63,11 +63,8 @@ public final class HarvestListener implements Listener {
         if (crop == null) {
             return;
         }
-        boolean natural = !crop.naturalOnly() || !placed.isPlaced(block);
         // Whatever happens next, this position no longer holds a placed block.
-        if (crop.naturalOnly()) {
-            placed.unmark(block);
-        }
+        boolean natural = !crop.naturalOnly() || !placed.unmark(block);
         Contest contest = contests.contest();
         Player player = event.getPlayer();
         if (contests.state() != ContestService.State.RUNNING || contest == null || !contest.has(crop.id())
@@ -109,11 +106,8 @@ public final class HarvestListener implements Listener {
         int count = 0;
         Block above = block.getRelative(BlockFace.UP);
         while (count < 32 && crop.blocks().contains(above.getType())) {
-            if (!crop.naturalOnly() || !placed.isPlaced(above)) {
+            if (!crop.naturalOnly() || !placed.unmark(above)) {
                 count++;
-            }
-            if (crop.naturalOnly()) {
-                placed.unmark(above);
             }
             above = above.getRelative(BlockFace.UP);
         }

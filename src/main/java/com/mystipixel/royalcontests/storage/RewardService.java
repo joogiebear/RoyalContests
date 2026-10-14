@@ -47,34 +47,60 @@ public final class RewardService {
         this.cache = cache;
     }
 
+    /** One placing of a finished contest; {@code bracket} is null below the brackets. */
+    public record Placing(Result result, String eventName, Bracket bracket, String cropName) {
+    }
+
     /**
-     * Record one placing: the result row, the player's stats, and a reward if they reached a bracket.
+     * Record a finished contest: each result row, the players' stats, and a reward for everyone who
+     * reached a bracket, in one database task.
      *
      * @param shuttingDown true when the contest is ending because the server is stopping; rewards are
      *                     then always left to claim, never auto-claimed into a player who is leaving
      */
-    public void record(Result result, String eventName, Bracket bracket, String cropName, boolean shuttingDown) {
-        PendingReward reward = bracket == null ? null : new PendingReward(-1, result.player(), result.playerName(),
-                eventName, result.crop(), result.score(), result.score(), bracket.id(), bracket.displayName(),
-                result.position(), result.total(), actions(bracket, result, cropName), System.currentTimeMillis());
-        database.record(result, reward, brackets::rank).thenAccept(recorded -> onMain(() -> {
-            cache.invalidate(result.player());
-            Player player = Bukkit.getPlayer(result.player());
-            if (player == null) {
-                return;
-            }
-            if (recorded.newBest()) {
-                lang.send(player, "personal-best", "%crop%", cropName, "%score%", String.valueOf(result.score()));
-            }
-            if (reward == null || recorded.rewardId() <= 0) {
-                return;
-            }
-            if (settings.autoClaim() && !shuttingDown) {
-                claim(player, withId(reward, recorded.rewardId()), ignored -> { });
-            } else {
-                lang.send(player, "reward-waiting", "%bracket%", bracket.displayName(), "%crop%", cropName);
+    public void record(List<Placing> placings, boolean shuttingDown) {
+        if (placings.isEmpty()) {
+            return;
+        }
+        List<Database.Placing> rows = new ArrayList<>(placings.size());
+        for (Placing placing : placings) {
+            rows.add(new Database.Placing(placing.result(), reward(placing)));
+        }
+        database.record(rows, brackets::rank).thenAccept(recorded -> onMain(() -> {
+            for (int i = 0; i < rows.size(); i++) {
+                announce(placings.get(i), rows.get(i).reward(), recorded.get(i), shuttingDown);
             }
         }));
+    }
+
+    private PendingReward reward(Placing placing) {
+        Result result = placing.result();
+        Bracket bracket = placing.bracket();
+        return bracket == null ? null : new PendingReward(-1, result.player(), result.playerName(),
+                placing.eventName(), result.crop(), result.score(), result.score(), bracket.id(),
+                bracket.displayName(), result.position(), result.total(),
+                actions(bracket, result, placing.cropName()), System.currentTimeMillis());
+    }
+
+    private void announce(Placing placing, PendingReward reward, Database.Recorded recorded, boolean shuttingDown) {
+        Result result = placing.result();
+        cache.invalidate(result.player());
+        Player player = Bukkit.getPlayer(result.player());
+        if (player == null) {
+            return;
+        }
+        if (recorded.newBest()) {
+            lang.send(player, "personal-best", "%crop%", placing.cropName(), "%score%", String.valueOf(result.score()));
+        }
+        if (reward == null || recorded.rewardId() <= 0) {
+            return;
+        }
+        if (settings.autoClaim() && !shuttingDown) {
+            claim(player, withId(reward, recorded.rewardId()), ignored -> { });
+        } else {
+            lang.send(player, "reward-waiting", "%bracket%", placing.bracket().displayName(),
+                    "%crop%", placing.cropName());
+        }
     }
 
     private static PendingReward withId(PendingReward r, int id) {
